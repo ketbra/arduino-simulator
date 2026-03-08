@@ -6,6 +6,8 @@ import { createArduinoRuntime } from './simulator/arduino-api.js';
 import { createExecutor } from './simulator/executor.js';
 import { createSerialMonitor } from './ui/serial-monitor.js';
 import { createComponentPalette } from './ui/component-palette.js';
+import { ConnectionGraph } from './circuit/connection-graph.js';
+import { WiringSystem } from './circuit/wiring.js';
 
 const editor = createEditor(document.getElementById('code-editor'));
 const renderer = new CircuitRenderer(document.getElementById('circuit-canvas'));
@@ -13,6 +15,13 @@ const serialMonitor = createSerialMonitor(document.getElementById('serial-output
 createComponentPalette(document.getElementById('component-palette'), (type, id, x, y) => {
   renderer.addComponent(type, id, x, y);
 });
+
+const connectionGraph = new ConnectionGraph();
+const wiring = new WiringSystem(
+  document.getElementById('circuit-canvas'),
+  renderer,
+  connectionGraph
+);
 
 let runtime = null;
 let executor = null;
@@ -52,4 +61,4 @@ btnStop.addEventListener('click', () => {
   btnStop.disabled = true;
 });
 
-window.arduinoSimulator = { editor, renderer };
+window.arduinoSimulator = { editor, renderer, wiring, connectionGraph };
