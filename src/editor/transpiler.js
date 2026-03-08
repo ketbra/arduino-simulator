@@ -17,6 +17,9 @@ const transforms = [
   // void funcName(...) { -> function funcName(...) {
   (line) => line.replace(/\bvoid\s+(\w+)\s*\(/, 'function $1('),
 
+  // typed function declarations: int/float/etc funcName(...) -> function funcName(...)
+  (line) => line.replace(/\b(int|float|long|byte|boolean|char)\s+(\w+)\s*\(/, 'function $2('),
+
   // Remove type annotations from function params: (int red, int green) -> (red, green)
   (line) => line.replace(/\b(int|float|long|unsigned long|byte|boolean|char)\s+(?=\w+\s*[,\)])/g, ''),
 
