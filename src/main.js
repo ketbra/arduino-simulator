@@ -8,6 +8,9 @@ import { createSerialMonitor } from './ui/serial-monitor.js';
 import { createComponentPalette } from './ui/component-palette.js';
 import { ConnectionGraph } from './circuit/connection-graph.js';
 import { WiringSystem } from './circuit/wiring.js';
+import { projects } from './projects/index.js';
+import { CircuitBridge } from './simulator/circuit-bridge.js';
+import { LED, RgbLed } from './circuit/components/index.js';
 
 const editor = createEditor(document.getElementById('code-editor'));
 const renderer = new CircuitRenderer(document.getElementById('circuit-canvas'));
@@ -22,6 +25,8 @@ const wiring = new WiringSystem(
   renderer,
   connectionGraph
 );
+
+const componentModels = new Map();
 
 let runtime = null;
 let executor = null;
@@ -42,6 +47,7 @@ btnRun.addEventListener('click', async () => {
   runtime.setSensorDistance(Number(distanceSlider.value));
   runtime.on('serialData', (text) => serialMonitor.append(text));
   executor = createExecutor(runtime);
+  new CircuitBridge(runtime, renderer, connectionGraph, componentModels);
 
   const code = transpile(editor.getCode());
 
