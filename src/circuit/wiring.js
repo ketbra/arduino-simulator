@@ -154,6 +154,27 @@ export class WiringSystem {
     }
   }
 
+  removeWire(wireEl) {
+    const idx = this.wires.findIndex((w) => w.el === wireEl);
+    if (idx !== -1) {
+      const w = this.wires[idx];
+      this.graph.removeWire(w.from, w.to);
+      this.wires.splice(idx, 1);
+    }
+  }
+
+  removeWiresForComponent(componentId) {
+    const prefix = `component:${componentId}:`;
+    const toRemove = this.wires.filter(
+      (w) => w.from.startsWith(prefix) || w.to.startsWith(prefix)
+    );
+    for (const w of toRemove) {
+      this.graph.removeWire(w.from, w.to);
+      const idx = this.wires.indexOf(w);
+      if (idx !== -1) this.wires.splice(idx, 1);
+    }
+  }
+
   clear() {
     this.wires.forEach((w) => w.el.remove());
     this.wires = [];

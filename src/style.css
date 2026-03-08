@@ -57,6 +57,16 @@ html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; backg
 }
 #distance-slider { flex: 1; max-width: 300px; }
 
+#context-menu {
+  background: #2d2d2d; border: 1px solid #555; border-radius: 4px;
+  padding: 2px; min-width: 100px;
+}
+#context-menu button {
+  display: block; width: 100%; padding: 6px 12px; border: none;
+  background: transparent; color: #d4d4d4; text-align: left; cursor: pointer; font-size: 13px;
+}
+#context-menu button:hover { background: #007acc; }
+
 @keyframes smoke-rise {
   0% { opacity: 0.8; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-30px) scale(2); }

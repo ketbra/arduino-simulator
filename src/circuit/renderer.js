@@ -10,9 +10,12 @@ export class CircuitRenderer {
     this.components = new Map();
     this.wires = [];
     this.dragState = null;
+    this.selectedComponent = null;
+    this.selectedWire = null;
 
     this._initSvg();
     this._initDragListeners();
+    this._initSelectionListeners();
   }
 
   _initSvg() {
@@ -31,8 +34,23 @@ export class CircuitRenderer {
     this.svg.appendChild(this.componentLayer);
     this.svg.appendChild(this.effectLayer);
 
-    this.boardLayer.appendChild(renderArduinoBoard(270, 10));
-    this.boardLayer.appendChild(renderBreadboard(20, 200));
+    this.arduinoBoard = renderArduinoBoard(270, 10);
+    this.breadboard = renderBreadboard(20, 200);
+    this.boardLayer.appendChild(this.arduinoBoard);
+    this.boardLayer.appendChild(this.breadboard);
+
+    // Default to schematic mode (hide breadboard)
+    this.mode = 'schematic';
+    this.breadboard.style.display = 'none';
+  }
+
+  setMode(mode) {
+    this.mode = mode;
+    if (mode === 'schematic') {
+      this.breadboard.style.display = 'none';
+    } else {
+      this.breadboard.style.display = '';
+    }
   }
 
   _initDragListeners() {
@@ -45,15 +63,116 @@ export class CircuitRenderer {
       comp.x = svgPt.x - this.dragState.offsetX;
       comp.y = svgPt.y - this.dragState.offsetY;
       comp.el.setAttribute('transform', `translate(${comp.x},${comp.y})`);
+      if (this._onDragEnd) this._onDragEnd();
     });
 
     this.svg.addEventListener('mouseup', () => {
       if (this.dragState) {
         const comp = this.components.get(this.dragState.id);
-        if (comp) comp.el.style.cursor = 'grab';
+        if (comp) {
+          comp.el.style.cursor = 'grab';
+          // Report drag end position for undo
+          if (this._onDragComplete && this.dragState.startX !== undefined) {
+            const moved = comp.x !== this.dragState.startX || comp.y !== this.dragState.startY;
+            if (moved) {
+              this._onDragComplete({
+                id: this.dragState.id,
+                fromX: this.dragState.startX,
+                fromY: this.dragState.startY,
+                toX: comp.x,
+                toY: comp.y,
+              });
+            }
+          }
+        }
         this.dragState = null;
+        // Refresh wire positions after drag
+        if (this._onDragEnd) this._onDragEnd();
       }
     });
+  }
+
+  _initSelectionListeners() {
+    // Click on empty SVG space deselects
+    this.svg.addEventListener('click', (e) => {
+      if (e.target === this.svg || e.target.closest('g') === this.boardLayer) {
+        this.deselectAll();
+      }
+    });
+  }
+
+  selectComponent(id) {
+    this.deselectAll();
+    const comp = this.components.get(id);
+    if (!comp) return;
+    this.selectedComponent = id;
+    comp.el.setAttribute('stroke', '#007acc');
+    comp.el.setAttribute('stroke-width', '2');
+  }
+
+  selectWire(wireEl) {
+    this.deselectAll();
+    this.selectedWire = wireEl;
+    wireEl.setAttribute('stroke-width', '4');
+    wireEl.dataset.origStroke = wireEl.getAttribute('stroke') || '';
+    wireEl.setAttribute('stroke', '#007acc');
+  }
+
+  deselectAll() {
+    if (this.selectedComponent) {
+      const comp = this.components.get(this.selectedComponent);
+      if (comp) {
+        comp.el.removeAttribute('stroke');
+        comp.el.removeAttribute('stroke-width');
+      }
+      this.selectedComponent = null;
+    }
+    if (this.selectedWire) {
+      if (this.selectedWire.dataset.origStroke) {
+        this.selectedWire.setAttribute('stroke', this.selectedWire.dataset.origStroke);
+      }
+      this.selectedWire.setAttribute('stroke-width', '2');
+      this.selectedWire = null;
+    }
+  }
+
+  deleteComponent(id) {
+    const comp = this.components.get(id);
+    if (!comp) return null;
+    const info = { type: comp.type, id, x: comp.x, y: comp.y };
+    comp.el.remove();
+    this.components.delete(id);
+    if (this.selectedComponent === id) this.selectedComponent = null;
+    // Find and remove all wires connected to this component
+    const removedWires = [];
+    const prefix = `component:${id}:`;
+    const remaining = [];
+    for (const wire of this.wires) {
+      const fromPin = wire.dataset.fromPin || '';
+      const toPin = wire.dataset.toPin || '';
+      if (fromPin.startsWith(prefix) || toPin.startsWith(prefix)) {
+        removedWires.push({ from: fromPin, to: toPin, color: wire.getAttribute('stroke') });
+        wire.remove();
+      } else {
+        remaining.push(wire);
+      }
+    }
+    this.wires = remaining;
+    return { component: info, wires: removedWires };
+  }
+
+  deleteWire(wireEl) {
+    const idx = this.wires.indexOf(wireEl);
+    if (idx === -1) return null;
+    const info = {
+      from: wireEl.dataset.fromPin || '',
+      to: wireEl.dataset.toPin || '',
+      color: wireEl.getAttribute('stroke'),
+    };
+    wireEl.remove();
+    this.wires.splice(idx, 1);
+    if (this.selectedWire === wireEl) this.selectedWire = null;
+    return info;
   }
 
   addComponent(type, id, x, y) {
@@ -83,11 +202,31 @@ export class CircuitRenderer {
     }
   }
 
-  addWire(x1, y1, x2, y2, color) {
+  addWire(x1, y1, x2, y2, color, fromPin, toPin) {
     const wire = renderWire(x1, y1, x2, y2, color);
+    if (fromPin) wire.dataset.fromPin = fromPin;
+    if (toPin) wire.dataset.toPin = toPin;
     this.wireLayer.appendChild(wire);
     this.wires.push(wire);
     return wire;
+  }
+
+  // Recalculate wire positions based on current pin locations
+  refreshWires(getPinCoordsFn) {
+    for (const wire of this.wires) {
+      const fromPin = wire.dataset.fromPin;
+      const toPin = wire.dataset.toPin;
+      if (fromPin && toPin) {
+        const from = getPinCoordsFn(fromPin);
+        const to = getPinCoordsFn(toPin);
+        if (from && to) {
+          wire.setAttribute('x1', from.x);
+          wire.setAttribute('y1', from.y);
+          wire.setAttribute('x2', to.x);
+          wire.setAttribute('y2', to.y);
+        }
+      }
+    }
   }
 
   updateLed(id, brightness, burnedOut) {
@@ -144,9 +283,24 @@ export class CircuitRenderer {
       const pt = this.svg.createSVGPoint();
       pt.x = e.clientX; pt.y = e.clientY;
       const svgPt = pt.matrixTransform(this.svg.getScreenCTM().inverse());
-      this.dragState = { id, offsetX: svgPt.x - comp.x, offsetY: svgPt.y - comp.y };
+      this.dragState = {
+        id,
+        offsetX: svgPt.x - comp.x,
+        offsetY: svgPt.y - comp.y,
+        startX: comp.x,
+        startY: comp.y,
+      };
       el.style.cursor = 'grabbing';
+      this.selectComponent(id);
     });
+  }
+
+  moveComponent(id, x, y) {
+    const comp = this.components.get(id);
+    if (!comp) return;
+    comp.x = x;
+    comp.y = y;
+    comp.el.setAttribute('transform', `translate(${x},${y})`);
   }
 
   getPinPosition(pinId) {
