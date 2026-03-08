@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arduino Simulator</title>
+</head>
+<body>
+  <div id="app">
+    <header id="toolbar">
+      <span class="logo">Arduino Simulator</span>
+      <select id="example-select">
+        <option value="">Load Example...</option>
+      </select>
+      <div class="mode-toggle">
+        <button id="mode-schematic" class="active">Schematic</button>
+        <button id="mode-breadboard">Breadboard</button>
+      </div>
+      <div class="run-controls">
+        <button id="btn-run">Run</button>
+        <button id="btn-stop" disabled>Stop</button>
+      </div>
+    </header>
+    <main id="workspace">
+      <div id="editor-panel">
+        <div id="code-editor"></div>
+        <div id="serial-monitor">
+          <div class="serial-header">Serial Monitor</div>
+          <div id="serial-output"></div>
+        </div>
+      </div>
+      <div id="circuit-panel">
+        <div id="component-palette"></div>
+        <svg id="circuit-canvas" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+        </svg>
+        <div id="sensor-controls">
+          <label>Object Distance: <span id="distance-value">100</span>cm</label>
+          <input type="range" id="distance-slider" min="0" max="200" value="100" />
+        </div>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
