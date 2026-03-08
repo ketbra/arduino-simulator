@@ -100,13 +100,17 @@ function loadProject(project) {
   // 2. Set code in editor
   editor.setCode(project.code);
 
-  // 3. Clear circuit
+  // 3. Clear circuit, graph, and models
   renderer.clear();
   wiring.clear();
+  connectionGraph.clear();
+  componentModels.clear();
 
   // 4. Place components
   for (const comp of project.components) {
     renderer.addComponent(comp.type, comp.id, comp.x, comp.y);
+    if (comp.type === 'led') componentModels.set(comp.id, new LED(comp.id));
+    if (comp.type === 'rgb-led') componentModels.set(comp.id, new RgbLed(comp.id));
   }
 
   // 5. Add wires

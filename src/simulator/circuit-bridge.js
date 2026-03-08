@@ -19,8 +19,8 @@ export class CircuitBridge {
         const cathodeConnected = this.graph.getConnectedNodes(`component:${id}:cathode`);
 
         // Check if this pin drives the LED
-        if (anodeConnected.includes(pinNode) || cathodeConnected.some((n) => n.includes(`pin${pin}`))) {
-          const hasResistor = [...anodeConnected, ...cathodeConnected].some((n) => n.includes('resistor') || n.includes(':r'));
+        if (anodeConnected.includes(pinNode) || cathodeConnected.includes(pinNode)) {
+          const hasResistor = [...anodeConnected, ...cathodeConnected].some((n) => n.includes('resistor') || /^component:r\d+:/.test(n));
           model.update({ anode: value, cathode: 0 }, { hasResistor });
           this.renderer.updateLed(id, model.brightness, model.burnedOut);
         }
@@ -35,8 +35,9 @@ export class CircuitBridge {
           for (const node of channelConnected) {
             const match = node.match(/arduino:pin(\d+)/);
             if (match) {
-              pinMap[channel] = this.runtime.getPinState(parseInt(match[1], 10)) || 0;
-              if (parseInt(match[1], 10) === pin) needsUpdate = true;
+              const pinNum = parseInt(match[1], 10);
+              pinMap[channel] = this.runtime.getPinState(pinNum) || 0;
+              if (pinNum === pin) needsUpdate = true;
             }
           }
         }
@@ -45,7 +46,7 @@ export class CircuitBridge {
           const commonConnected = this.graph.getConnectedNodes(`component:${id}:common`);
           const hasResistors = ['red', 'green', 'blue'].every((ch) => {
             const connected = this.graph.getConnectedNodes(`component:${id}:${ch}`);
-            return connected.some((n) => n.includes('resistor') || n.includes(':r'));
+            return connected.some((n) => n.includes('resistor') || /^component:r\d+:/.test(n));
           });
 
           model.update({
