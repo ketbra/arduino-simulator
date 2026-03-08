@@ -1,2 +1,6 @@
 import './style.css';
-console.log('Arduino Simulator loaded');
+import { createEditor } from './editor/editor.js';
+
+const editor = createEditor(document.getElementById('code-editor'));
+
+window.arduinoSimulator = { editor };
