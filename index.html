@@ -25,6 +25,7 @@
         <button id="btn-step">Step</button>
         <button id="btn-stop" disabled>Stop</button>
       </div>
+      <button id="btn-help" title="Help">?</button>
     </header>
     <main id="workspace">
       <div id="editor-panel">
@@ -56,6 +57,35 @@
   </div>
   <div id="context-menu" style="display:none; position:fixed; z-index:1000;">
     <button id="ctx-delete">Delete</button>
+  </div>
+  <div id="help-overlay" style="display:none;">
+    <div class="help-content">
+      <button id="help-close">&times;</button>
+      <h2>Arduino Simulator Help</h2>
+      <h3>Building Circuits</h3>
+      <ul>
+        <li><b>Add components:</b> Click buttons in the palette (LED, RGB LED, etc.)</li>
+        <li><b>Connect wires:</b> Click a pin, then click another pin to connect them</li>
+        <li><b>Cancel wire:</b> Press <kbd>Esc</kbd> or click empty space</li>
+        <li><b>Move components:</b> Drag them — wires follow automatically</li>
+        <li><b>Delete:</b> Click to select, then press <kbd>Delete</kbd> or right-click → Delete</li>
+        <li><b>Push button:</b> Click the round cap to press/release</li>
+      </ul>
+      <h3>Running Code</h3>
+      <ul>
+        <li><b>Run:</b> Executes your code continuously</li>
+        <li><b>Step:</b> Execute one line at a time (click Next to advance)</li>
+        <li><b>Stop:</b> Halt execution</li>
+        <li><b>Distance slider:</b> Controls the virtual ultrasonic sensor</li>
+      </ul>
+      <h3>Keyboard Shortcuts</h3>
+      <ul>
+        <li><kbd>Ctrl+Z</kbd> — Undo</li>
+        <li><kbd>Ctrl+Y</kbd> / <kbd>Ctrl+Shift+Z</kbd> — Redo</li>
+        <li><kbd>Delete</kbd> / <kbd>Backspace</kbd> — Delete selected component or wire</li>
+        <li><kbd>Esc</kbd> — Cancel wire in progress</li>
+      </ul>
+    </div>
   </div>
   <script type="module" src="/src/main.js"></script>
 </body>

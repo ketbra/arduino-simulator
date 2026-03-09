@@ -74,3 +74,68 @@ html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; backg
 .smoke-puff {
   animation: smoke-rise 1.5s ease-out forwards;
 }
+
+/* Pin hover effects */
+.pin-marker { transition: r 0.15s, fill 0.15s; cursor: crosshair; }
+.pin-hitarea { cursor: crosshair; }
+.pin-hitarea:hover + .pin-marker, .pin-marker:hover {
+  r: 7;
+  fill: #ffcc00;
+  filter: drop-shadow(0 0 4px #ffcc00);
+}
+/* Arduino board pins */
+.digital-pin:hover rect, .power-pin:hover rect {
+  fill: #e0c040;
+  filter: drop-shadow(0 0 4px #ffcc00);
+}
+
+/* Wire mode visual feedback */
+@keyframes pin-pulse {
+  0%, 100% { r: 5; fill: #88cc88; }
+  50% { r: 7; fill: #aaffaa; filter: drop-shadow(0 0 6px #88ff88); }
+}
+.pin-available-target {
+  animation: pin-pulse 1s ease-in-out infinite;
+}
+.pin-wire-source {
+  r: 8 !important;
+  fill: #ffcc00 !important;
+  filter: drop-shadow(0 0 6px #ffcc00) !important;
+}
+
+/* Snap-to-pin highlight */
+.pin-snap-target {
+  r: 8 !important;
+  fill: #00cc66 !important;
+  filter: drop-shadow(0 0 8px #00ff88) !important;
+}
+
+/* Help button */
+#btn-help {
+  width: 28px; height: 28px; border-radius: 50%; font-weight: bold; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Help overlay */
+#help-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+}
+.help-content {
+  background: #2d2d2d; border: 1px solid #555; border-radius: 8px;
+  padding: 24px 32px; max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto;
+  color: #d4d4d4; font-size: 14px; line-height: 1.6;
+}
+.help-content h2 { margin-bottom: 16px; color: #fff; }
+.help-content h3 { margin: 16px 0 8px; color: #7cc; }
+.help-content ul { padding-left: 20px; margin-bottom: 8px; }
+.help-content li { margin-bottom: 4px; }
+.help-content kbd {
+  background: #444; border: 1px solid #666; border-radius: 3px;
+  padding: 1px 5px; font-family: monospace; font-size: 12px;
+}
+#help-close {
+  float: right; background: none; border: none; color: #888; font-size: 24px;
+  cursor: pointer; padding: 0 4px; line-height: 1;
+}
+#help-close:hover { color: #fff; }

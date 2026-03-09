@@ -18,6 +18,9 @@ let dirty = false;
 function markDirty() { dirty = true; scheduleSave(); }
 function clearDirty() { dirty = false; }
 
+// --- Undo/Redo (Feature 3) - must be before editor/palette setup ---
+const undoManager = createUndoManager();
+
 // --- Editor Setup (with onChange for dirty tracking, Feature 4) ---
 const editor = createEditor(document.getElementById('code-editor'), {
   onChange: () => {
@@ -230,8 +233,7 @@ function loadProject(project) {
   clearDirty();
 }
 
-// --- Undo/Redo (Feature 3) ---
-const undoManager = createUndoManager();
+// --- Undo/Redo wiring ---
 
 // Report drag completion for undo
 renderer._onDragComplete = (info) => {
@@ -528,5 +530,12 @@ if (exampleSelect) {
     }
   });
 }
+
+// Help overlay
+const btnHelp = document.getElementById('btn-help');
+const helpOverlay = document.getElementById('help-overlay');
+btnHelp.addEventListener('click', () => { helpOverlay.style.display = 'flex'; });
+document.getElementById('help-close').addEventListener('click', () => { helpOverlay.style.display = 'none'; });
+helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) helpOverlay.style.display = 'none'; });
 
 window.arduinoSimulator = { editor, renderer, wiring, connectionGraph };
