@@ -10,6 +10,7 @@ export class WiringSystem {
     this.colorIndex = 0;
     this._previewLine = null;
     this._currentSnapTarget = null;
+    this.onWireAdded = null; // callback(fromPinId, toPinId)
     this._setupListeners();
   }
 
@@ -53,7 +54,8 @@ export class WiringSystem {
 
         const wire = this.renderer.addWire(
           this.wireInProgress.x, this.wireInProgress.y,
-          pos.x, pos.y, color
+          pos.x, pos.y, color,
+          this.wireInProgress.pinId, pinId
         );
 
         this.graph.addWire(this.wireInProgress.pinId, pinId);
@@ -66,6 +68,7 @@ export class WiringSystem {
         // Reset start pin visual
         this._resetWiringVisuals();
         this._removePreview();
+        if (this.onWireAdded) this.onWireAdded(this.wireInProgress.pinId, pinId);
         this.wireInProgress = null;
       }
     });

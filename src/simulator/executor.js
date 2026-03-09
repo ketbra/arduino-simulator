@@ -3,6 +3,10 @@ export function createExecutor(runtime) {
   let loopFn = null;
   let running = false;
   let loopTimeoutId = null;
+  let onLineChange = null;
+  let stepping = false;
+  let stepResolve = null;
+  let compiled = false;
 
   function buildGlobals() {
     const api = runtime.api;
@@ -13,6 +17,12 @@ export function createExecutor(runtime) {
       delay: api.delay, delayMicroseconds: api.delayMicroseconds,
       Serial: api.Serial,
       random: api.random, constrain: api.constrain, map: api.map,
+      __reportLine: (n) => {
+        if (onLineChange) onLineChange(n);
+        if (stepping) {
+          return new Promise((resolve) => { stepResolve = resolve; });
+        }
+      },
     };
   }
 
@@ -35,12 +45,13 @@ export function createExecutor(runtime) {
   }
 
   async function loadAndRunSetup(code) {
-    const compiled = compileCode(code);
-    setupFn = compiled.setup;
-    loopFn = compiled.loop;
+    const result = compileCode(code);
+    setupFn = result.setup;
+    loopFn = result.loop;
+    compiled = true;
 
     if (setupFn) {
-      setupFn();
+      await setupFn();
     }
     running = true;
   }
@@ -48,23 +59,22 @@ export function createExecutor(runtime) {
   async function runLoopIterations(count) {
     if (!loopFn) return;
     for (let i = 0; i < count && running; i++) {
-      loopFn();
+      await loopFn();
     }
   }
 
   function startLoop(intervalMs = 10) {
     if (!loopFn) return;
     running = true;
+    stepping = false;
 
-    function tick() {
+    async function tick() {
       if (!running) return;
       try {
-        const result = loopFn();
-        let nextDelay = intervalMs;
-        if (result && result.__delay) {
-          nextDelay = Math.max(1, result.__delay);
+        await loopFn();
+        if (running) {
+          loopTimeoutId = setTimeout(tick, intervalMs);
         }
-        loopTimeoutId = setTimeout(tick, nextDelay);
       } catch (e) {
         running = false;
         runtime.api.Serial.println(`Runtime error: ${e.message}`);
@@ -74,11 +84,46 @@ export function createExecutor(runtime) {
     tick();
   }
 
+  function startStepping() {
+    if (!loopFn) return;
+    running = true;
+    stepping = true;
+
+    async function stepLoop() {
+      while (running && stepping) {
+        try {
+          await loopFn();
+        } catch (e) {
+          running = false;
+          runtime.api.Serial.println(`Runtime error: ${e.message}`);
+          return;
+        }
+      }
+    }
+
+    stepLoop();
+  }
+
+  function step() {
+    if (stepResolve) {
+      const resolve = stepResolve;
+      stepResolve = null;
+      resolve();
+    }
+  }
+
   function stop() {
     running = false;
+    stepping = false;
     if (loopTimeoutId) {
       clearTimeout(loopTimeoutId);
       loopTimeoutId = null;
+    }
+    // Unblock any pending step
+    if (stepResolve) {
+      const resolve = stepResolve;
+      stepResolve = null;
+      resolve();
     }
   }
 
@@ -86,5 +131,20 @@ export function createExecutor(runtime) {
     return running;
   }
 
-  return { loadAndRunSetup, runLoopIterations, startLoop, stop, isRunning };
+  function isStepping() {
+    return stepping;
+  }
+
+  function isCompiled() {
+    return compiled;
+  }
+
+  function setLineCallback(cb) {
+    onLineChange = cb;
+  }
+
+  return {
+    loadAndRunSetup, runLoopIterations, startLoop, startStepping, step,
+    stop, isRunning, isStepping, isCompiled, setLineCallback,
+  };
 }

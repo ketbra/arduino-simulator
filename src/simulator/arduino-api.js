@@ -52,11 +52,11 @@ export function createArduinoRuntime() {
     },
 
     delay(ms) {
-      return { __delay: ms };
+      return new Promise((resolve) => setTimeout(resolve, ms));
     },
 
     delayMicroseconds(us) {
-      return { __delay: us / 1000 };
+      return new Promise((resolve) => setTimeout(resolve, Math.max(1, us / 1000)));
     },
 
     Serial: {
@@ -97,6 +97,7 @@ export function createArduinoRuntime() {
     setExternalPinState: (pin, value) => { externalPinStates[pin] = value; },
     getSerialOutput: () => serialOutput,
     setSensorDistance: (d) => { sensorDistance = d; },
+    emit(event, ...args) { if (listeners[event]) listeners[event].forEach((cb) => cb(...args)); },
     reset() {
       Object.keys(pinModes).forEach((k) => delete pinModes[k]);
       Object.keys(pinStates).forEach((k) => delete pinStates[k]);

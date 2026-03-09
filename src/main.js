@@ -32,6 +32,11 @@ const renderer = new CircuitRenderer(document.getElementById('circuit-canvas'));
 const serialMonitor = createSerialMonitor(document.getElementById('serial-output'));
 createComponentPalette(document.getElementById('component-palette'), (type, id, x, y) => {
   renderer.addComponent(type, id, x, y);
+  // Register component models so CircuitBridge can update visuals
+  if (type === 'led') componentModels.set(id, new LED(id));
+  if (type === 'rgb-led') componentModels.set(id, new RgbLed(id));
+  // Connect resistor pins internally so BFS can traverse through them
+  if (type === 'resistor') connectionGraph.addWire(`component:${id}:pin1`, `component:${id}:pin2`);
   undoManager.push({ type: 'add-component', data: { type, id, x, y } });
   markDirty();
 });
@@ -44,6 +49,36 @@ const wiring = new WiringSystem(
 );
 
 const componentModels = new Map();
+
+// Evaluate static power rail connections (5V/GND directly to LEDs)
+const POWER_NODES = ['arduino:5V', 'arduino:3V3'];
+const GND_NODES = ['arduino:GND', 'arduino:GND2'];
+
+function evaluateStaticConnections() {
+  for (const [id, model] of componentModels) {
+    if (model.type === 'led') {
+      const anodeConnected = connectionGraph.getConnectedNodes(`component:${id}:anode`);
+      const cathodeConnected = connectionGraph.getConnectedNodes(`component:${id}:cathode`);
+      const allConnected = [...anodeConnected, ...cathodeConnected];
+
+      const hasPower = allConnected.some((n) => POWER_NODES.includes(n));
+      const hasGnd = allConnected.some((n) => GND_NODES.includes(n));
+
+      if (hasPower && hasGnd) {
+        const hasResistor = allConnected.some((n) => /^component:(r\d+|resistor-\d+):/.test(n));
+        const anodeHasPower = anodeConnected.some((n) => POWER_NODES.includes(n));
+        model.update({ anode: anodeHasPower ? 1 : 0, cathode: anodeHasPower ? 0 : 1 }, { hasResistor });
+        renderer.updateLed(id, model.brightness, model.burnedOut);
+      } else if (!model.burnedOut && model.brightness > 0) {
+        // Circuit broken — turn off
+        model.brightness = 0;
+        renderer.updateLed(id, model.brightness, model.burnedOut);
+      }
+    }
+  }
+}
+
+wiring.onWireAdded = () => evaluateStaticConnections();
 
 let runtime = null;
 let executor = null;
@@ -191,6 +226,17 @@ renderer.svg.addEventListener('buttonToggle', (e) => {
     connectionGraph.addWire(pin1, pin2);
   } else {
     connectionGraph.removeWire(pin1, pin2);
+  }
+  // Re-evaluate circuit after topology change
+  evaluateStaticConnections();
+  if (runtime) {
+    // Re-trigger pin change events for all active output pins
+    for (let p = 0; p <= 13; p++) {
+      const state = runtime.getPinState(p);
+      if (state !== undefined) {
+        runtime.emit('pinChange', p, state, runtime.getPinMode(p));
+      }
+    }
   }
 });
 

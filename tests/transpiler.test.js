@@ -2,15 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { transpile } from '../src/editor/transpiler.js';
 
 describe('transpiler', () => {
-  it('converts void functions to JS functions', () => {
-    expect(transpile('void setup() {')).toBe('function setup() {');
-    expect(transpile('void loop() {')).toBe('function loop() {');
-    expect(transpile('void myFunc() {')).toBe('function myFunc() {');
+  it('converts void functions to async JS functions', () => {
+    expect(transpile('void setup() {')).toBe('async function setup() {');
+    expect(transpile('void loop() {')).toBe('async function loop() {');
+    expect(transpile('void myFunc() {')).toBe('async function myFunc() {');
   });
 
   it('converts void functions with typed args', () => {
     expect(transpile('void rgbLedDisplay(int red, int green, int blue) {'))
-      .toBe('function rgbLedDisplay(red, green, blue) {');
+      .toBe('async function rgbLedDisplay(red, green, blue) {');
   });
 
   it('converts int/float variable declarations to let', () => {
@@ -40,8 +40,8 @@ describe('transpiler', () => {
   pinMode(13, OUTPUT);
 }`;
     const output = transpile(input);
-    expect(output).toContain('function setup() {');
+    expect(output).toContain('async function setup() {');
     expect(output).toContain('let x = 5;');
-    expect(output).toContain('pinMode(13, OUTPUT);');
+    expect(output).toContain('await pinMode(13, OUTPUT);');
   });
 });
