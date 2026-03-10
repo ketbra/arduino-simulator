@@ -139,3 +139,14 @@ html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; backg
   cursor: pointer; padding: 0 4px; line-height: 1;
 }
 #help-close:hover { color: #fff; }
+
+/* Breadboard overlay */
+.bb-highlight { pointer-events: none; }
+.bb-wire { pointer-events: none; }
+.bb-component { pointer-events: none; }
+
+/* Dim component palette in breadboard mode */
+.breadboard-mode .palette-item {
+  opacity: 0.4;
+  pointer-events: none;
+}

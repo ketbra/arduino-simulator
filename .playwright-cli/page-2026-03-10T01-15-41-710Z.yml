@@ -1,0 +1,175 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: Arduino Simulator
+    - generic [ref=e5]:
+      - button "Save" [ref=e6] [cursor=pointer]
+      - button "Load" [ref=e7] [cursor=pointer]
+    - combobox [ref=e8] [cursor=pointer]:
+      - option "Load Example..."
+      - option "LED Blink"
+      - option "Button-Controlled LED"
+      - option "RGB LED Multicolor" [selected]
+      - option "Ultrasonic Distance-to-Color"
+    - generic [ref=e9]:
+      - button "Schematic" [active] [ref=e10] [cursor=pointer]
+      - button "Breadboard" [ref=e11] [cursor=pointer]
+    - generic [ref=e12]:
+      - button "Run" [ref=e13] [cursor=pointer]
+      - button "Step" [ref=e14] [cursor=pointer]
+      - button "Stop" [disabled] [ref=e15]
+    - button "?" [ref=e16] [cursor=pointer]
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]: "1"
+            - generic [ref=e25]: "2"
+            - generic [ref=e26]: "3"
+            - generic [ref=e27]: "4"
+            - generic [ref=e28]: "5"
+            - generic [ref=e29]: "6"
+            - generic [ref=e30]: "7"
+            - generic [ref=e31]: "8"
+            - generic [ref=e32]: "9"
+            - generic [ref=e33]: "10"
+            - generic [ref=e34]: "11"
+            - generic [ref=e35]: "12"
+            - generic [ref=e635]: "13"
+            - generic [ref=e636]: "14"
+            - generic [ref=e637]: "15"
+            - generic [ref=e638]: "16"
+          - generic [ref=e40]:
+            - generic [ref=e42]: ⌄
+            - generic [ref=e43]: ⌄
+        - textbox [ref=e44]:
+          - generic [ref=e576]: int ledPinR = 11;
+          - generic [ref=e159]: int ledPinG = 10;
+          - generic [ref=e639]: int ledPinB = 9;
+          - generic [ref=e641]: "void setup() {"
+          - generic [ref=e642]: pinMode(ledPinR, OUTPUT);
+          - generic [ref=e643]: pinMode(ledPinG, OUTPUT);
+          - generic [ref=e644]: pinMode(ledPinB, OUTPUT);
+          - generic [ref=e645]: "}"
+          - generic [ref=e647]: "void loop() {"
+          - generic [ref=e648]: analogWrite(ledPinR, random(256));
+          - generic [ref=e649]: analogWrite(ledPinG, random(256));
+          - generic [ref=e650]: analogWrite(ledPinB, random(256));
+          - generic [ref=e651]: delay(500);
+          - generic [ref=e652]: "}"
+      - generic [ref=e62]: Serial Monitor
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - button "LED" [ref=e66] [cursor=pointer]
+        - button "RGB LED" [ref=e67] [cursor=pointer]
+        - button "220Ω" [ref=e68] [cursor=pointer]
+        - button "Button" [ref=e69] [cursor=pointer]
+        - button "HC-SR04" [ref=e70] [cursor=pointer]
+      - img [ref=e71]:
+        - generic [ref=e73]:
+          - generic [ref=e75]: Arduino Uno
+          - generic [ref=e76]:
+            - generic "Digital Pin 0" [ref=e77]
+            - generic "Digital Pin 0" [ref=e78]
+            - generic [ref=e79]: "0"
+          - generic [ref=e80]:
+            - generic "Digital Pin 1" [ref=e81]
+            - generic "Digital Pin 1" [ref=e82]
+            - generic [ref=e83]: "1"
+          - generic [ref=e84]:
+            - generic "Digital Pin 2" [ref=e85]
+            - generic "Digital Pin 2" [ref=e86]
+            - generic [ref=e87]: "2"
+          - generic [ref=e88]:
+            - generic "Digital Pin 3" [ref=e89]
+            - generic "Digital Pin 3" [ref=e90]
+            - generic [ref=e91]: "3"
+          - generic [ref=e92]:
+            - generic "Digital Pin 4" [ref=e93]
+            - generic "Digital Pin 4" [ref=e94]
+            - generic [ref=e95]: "4"
+          - generic [ref=e96]:
+            - generic "Digital Pin 5" [ref=e97]
+            - generic "Digital Pin 5" [ref=e98]
+            - generic [ref=e99]: "5"
+          - generic [ref=e100]:
+            - generic "Digital Pin 6" [ref=e101]
+            - generic "Digital Pin 6" [ref=e102]
+            - generic [ref=e103]: "6"
+          - generic [ref=e104]:
+            - generic "Digital Pin 7" [ref=e105]
+            - generic "Digital Pin 7" [ref=e106]
+            - generic [ref=e107]: "7"
+          - generic [ref=e108]:
+            - generic "Digital Pin 8" [ref=e109]
+            - generic "Digital Pin 8" [ref=e110]
+            - generic [ref=e111]: "8"
+          - generic [ref=e112]:
+            - generic "Digital Pin 9" [ref=e113]
+            - generic "Digital Pin 9" [ref=e114]
+            - generic [ref=e115]: "9"
+          - generic [ref=e116]:
+            - generic "Digital Pin 10" [ref=e117]
+            - generic "Digital Pin 10" [ref=e118]
+            - generic [ref=e119]: "10"
+          - generic [ref=e120]:
+            - generic "Digital Pin 11" [ref=e121]
+            - generic "Digital Pin 11" [ref=e122]
+            - generic [ref=e123]: "11"
+          - generic [ref=e124]:
+            - generic "Digital Pin 12" [ref=e125]
+            - generic "Digital Pin 12" [ref=e126]
+            - generic [ref=e127]: "12"
+          - generic [ref=e128]:
+            - generic "Digital Pin 13" [ref=e129]
+            - generic "Digital Pin 13" [ref=e130]
+            - generic [ref=e131]: "13"
+          - generic [ref=e132]:
+            - generic "GND" [ref=e133]
+            - generic "GND" [ref=e134]
+            - generic [ref=e135]: GND
+          - generic [ref=e136]:
+            - generic "GND2" [ref=e137]
+            - generic "GND2" [ref=e138]
+            - generic [ref=e139]: GND2
+          - generic [ref=e140]:
+            - generic "5V" [ref=e141]
+            - generic "5V" [ref=e142]
+            - generic [ref=e143]: 5V
+          - generic [ref=e144]:
+            - generic "3.3V" [ref=e145]
+            - generic "3.3V" [ref=e146]
+            - generic [ref=e147]: 3.3V
+        - generic [ref=e164]:
+          - generic [ref=e660]:
+            - generic "Resistor Pin 1" [ref=e665]
+            - generic "Resistor Pin 1" [ref=e666]
+            - generic "Resistor Pin 2" [ref=e667]
+            - generic "Resistor Pin 2" [ref=e668]
+          - generic [ref=e669]:
+            - generic "Resistor Pin 1" [ref=e674]
+            - generic "Resistor Pin 1" [ref=e675]
+            - generic "Resistor Pin 2" [ref=e676]
+            - generic "Resistor Pin 2" [ref=e677]
+          - generic [ref=e678]:
+            - generic "Resistor Pin 1" [ref=e683]
+            - generic "Resistor Pin 1" [ref=e684]
+            - generic "Resistor Pin 2" [ref=e685]
+            - generic "Resistor Pin 2" [ref=e686]
+          - generic [ref=e687]:
+            - generic "Common Anode (+)" [ref=e688]
+            - generic "Common Anode (+)" [ref=e689]
+            - generic [ref=e690]: +
+            - generic "Red" [ref=e691]
+            - generic "Red" [ref=e692]
+            - generic [ref=e693]: R
+            - generic "Green" [ref=e694]
+            - generic "Green" [ref=e695]
+            - generic [ref=e696]: G
+            - generic "Blue" [ref=e697]
+            - generic "Blue" [ref=e698]
+            - generic [ref=e699]: B
+            - generic [ref=e701]: RGB
+      - generic [ref=e148]:
+        - generic [ref=e149]: "Object Distance: 100cm"
+        - slider [ref=e150]: "100"

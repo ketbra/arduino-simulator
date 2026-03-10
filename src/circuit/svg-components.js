@@ -1,6 +1,6 @@
 const NS = 'http://www.w3.org/2000/svg';
 
-function svgEl(tag, attrs = {}) {
+export function svgEl(tag, attrs = {}) {
   const el = document.createElementNS(NS, tag);
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
   return el;
@@ -153,12 +153,12 @@ export function renderBreadboard(x, y) {
   const rowLabels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
 
   const width = (cols + 2) * holeSpacing;
-  const height = 220;
+  const height = 244;
   g.appendChild(svgEl('rect', { width, height, rx: 6, fill: '#f0efe8', stroke: '#ccc', 'stroke-width': 1 }));
 
-  // Center gap
-  const gapY = 98;
-  g.appendChild(svgEl('rect', { x: 10, y: gapY, width: width - 20, height: 10, rx: 2, fill: '#ddd' }));
+  // Center gap (between row e at y=112 and row f at y=144)
+  const gapY = 118;
+  g.appendChild(svgEl('rect', { x: 10, y: gapY, width: width - 20, height: 20, rx: 2, fill: '#ddd' }));
 
   // Power rails (top + and -, bottom + and -)
   [{ y: 12, label: '+', color: '#d33', railId: 'power+' }, { y: 28, label: '-', color: '#33d', railId: 'power-' }].forEach((rail) => {
@@ -175,7 +175,7 @@ export function renderBreadboard(x, y) {
 
   // Main holes
   rowLabels.forEach((row, ri) => {
-    const baseY = ri < 5 ? 48 + ri * holeSpacing : 118 + (ri - 5) * holeSpacing;
+    const baseY = ri < 5 ? 48 + ri * holeSpacing : 144 + (ri - 5) * holeSpacing;
     for (let col = 1; col <= cols; col++) {
       const hx = col * holeSpacing + 10;
       g.appendChild(svgEl('circle', {

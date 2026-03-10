@@ -8,6 +8,7 @@ export class WiringSystem {
     this.wireInProgress = null;
     this.wires = [];
     this.colorIndex = 0;
+    this.enabled = true;
     this._previewLine = null;
     this._currentSnapTarget = null;
     this.onWireAdded = null; // callback(fromPinId, toPinId)
@@ -16,6 +17,7 @@ export class WiringSystem {
 
   _setupListeners() {
     this.svg.addEventListener('click', (e) => {
+      if (!this.enabled) return;
       const pinEl = e.target.closest('[data-pin]');
       if (!pinEl) {
         // Click on empty space cancels wire in progress
@@ -75,6 +77,7 @@ export class WiringSystem {
 
     // Live preview line while placing wire
     this.svg.addEventListener('mousemove', (e) => {
+      if (!this.enabled) return;
       if (!this.wireInProgress) return;
       const pt = this.svg.createSVGPoint();
       pt.x = e.clientX;

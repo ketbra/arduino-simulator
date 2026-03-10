@@ -29,27 +29,38 @@ export class CircuitRenderer {
     this.componentLayer = document.createElementNS(NS, 'g');
     this.effectLayer = document.createElementNS(NS, 'g');
 
+    this.breadboardOverlayLayer = document.createElementNS(NS, 'g');
+    this.breadboardOverlayLayer.setAttribute('transform', 'translate(20, 200)');
+
     this.svg.appendChild(this.boardLayer);
     this.svg.appendChild(this.wireLayer);
     this.svg.appendChild(this.componentLayer);
     this.svg.appendChild(this.effectLayer);
+    this.svg.appendChild(this.breadboardOverlayLayer);
 
     this.arduinoBoard = renderArduinoBoard(270, 10);
     this.breadboard = renderBreadboard(20, 200);
     this.boardLayer.appendChild(this.arduinoBoard);
     this.boardLayer.appendChild(this.breadboard);
 
-    // Default to schematic mode (hide breadboard)
+    // Default to schematic mode (hide breadboard and overlay)
     this.mode = 'schematic';
-    this.breadboard.style.display = 'none';
+    this.breadboard.setAttribute('display', 'none');
+    this.breadboardOverlayLayer.setAttribute('display', 'none');
   }
 
   setMode(mode) {
     this.mode = mode;
     if (mode === 'schematic') {
-      this.breadboard.style.display = 'none';
+      this.breadboard.setAttribute('display', 'none');
+      this.componentLayer.removeAttribute('display');
+      this.wireLayer.removeAttribute('display');
+      this.breadboardOverlayLayer.setAttribute('display', 'none');
     } else {
-      this.breadboard.style.display = '';
+      this.breadboard.removeAttribute('display');
+      this.componentLayer.setAttribute('display', 'none');
+      this.wireLayer.setAttribute('display', 'none');
+      this.breadboardOverlayLayer.removeAttribute('display');
     }
   }
 

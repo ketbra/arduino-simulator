@@ -1,13 +1,24 @@
 export class CircuitBridge {
-  constructor(runtime, renderer, connectionGraph, componentModels) {
+  constructor(runtime, renderer, connectionGraph, componentModels, bbRenderer) {
     this.runtime = runtime;
     this.renderer = renderer;
+    this.bbRenderer = bbRenderer || null;
     this.graph = connectionGraph;
     this.models = componentModels; // Map<id, componentModel>
 
     this.runtime.on('pinChange', (pin, value, mode) => {
       this._onPinChange(pin, value);
     });
+  }
+
+  _updateLed(id, brightness, burnedOut) {
+    this.renderer.updateLed(id, brightness, burnedOut);
+    if (this.bbRenderer) this.bbRenderer.updateLed(id, brightness, burnedOut);
+  }
+
+  _updateRgbLed(id, color, burnedOut) {
+    this.renderer.updateRgbLed(id, color, burnedOut);
+    if (this.bbRenderer) this.bbRenderer.updateRgbLed(id, color, burnedOut);
   }
 
   // Check LEDs connected to static power rails (5V/3.3V + GND)
@@ -31,7 +42,7 @@ export class CircuitBridge {
           const hasResistor = [...anodeConnected, ...cathodeConnected].some((n) => /^component:(r\d+|resistor-\d+):/.test(n));
           const voltage = (anodeHasPower && cathodeHasGnd) ? 1 : -1;
           model.update({ anode: voltage > 0 ? 1 : 0, cathode: voltage > 0 ? 0 : 1 }, { hasResistor });
-          this.renderer.updateLed(id, model.brightness, model.burnedOut);
+          this._updateLed(id, model.brightness, model.burnedOut);
         }
       }
     }
@@ -50,13 +61,13 @@ export class CircuitBridge {
         if (allConnected.includes(pinNode)) {
           const hasResistor = allConnected.some((n) => /^component:(r\d+|resistor-\d+):/.test(n));
           model.update({ anode: value, cathode: 0 }, { hasResistor });
-          this.renderer.updateLed(id, model.brightness, model.burnedOut);
+          this._updateLed(id, model.brightness, model.burnedOut);
         } else if (!model.burnedOut && model.brightness > 0) {
           // Pin changed but LED not connected to it — check if LED lost its driver
           const hasAnyDriver = allConnected.some((n) => /^arduino:pin\d+$/.test(n));
           if (!hasAnyDriver) {
             model.brightness = 0;
-            this.renderer.updateLed(id, model.brightness, model.burnedOut);
+            this._updateLed(id, model.brightness, model.burnedOut);
           }
         }
       }
@@ -98,7 +109,7 @@ export class CircuitBridge {
             blue: scale(pinMap.blue),
           }, { hasResistors });
 
-          this.renderer.updateRgbLed(id, model.color, model.burnedOut);
+          this._updateRgbLed(id, model.color, model.burnedOut);
         }
       }
     }

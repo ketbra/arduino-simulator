@@ -8,6 +8,8 @@ import { createSerialMonitor } from './ui/serial-monitor.js';
 import { createComponentPalette } from './ui/component-palette.js';
 import { ConnectionGraph } from './circuit/connection-graph.js';
 import { WiringSystem } from './circuit/wiring.js';
+import { compute as computeBreadboardLayout, COMPONENT_SPECS } from './circuit/breadboard-layout.js';
+import { BreadboardRenderer } from './circuit/breadboard-renderer.js';
 import { projects } from './projects/index.js';
 import { CircuitBridge } from './simulator/circuit-bridge.js';
 import { LED, RgbLed } from './circuit/components/index.js';
@@ -29,8 +31,10 @@ const editor = createEditor(document.getElementById('code-editor'), {
   },
 });
 const renderer = new CircuitRenderer(document.getElementById('circuit-canvas'));
+const bbRenderer = new BreadboardRenderer(renderer.breadboardOverlayLayer);
 const serialMonitor = createSerialMonitor(document.getElementById('serial-output'));
 createComponentPalette(document.getElementById('component-palette'), (type, id, x, y) => {
+  if (!wiring.enabled) return;
   renderer.addComponent(type, id, x, y);
   // Register component models so CircuitBridge can update visuals
   if (type === 'led') componentModels.set(id, new LED(id));
@@ -92,15 +96,61 @@ const distanceSlider = document.getElementById('distance-slider');
 const distanceValue = document.getElementById('distance-value');
 
 btnSchematic.addEventListener('click', () => {
+  bbRenderer.clear();
   renderer.setMode('schematic');
   btnSchematic.classList.add('active');
   btnBreadboard.classList.remove('active');
+
+  // Re-enable editing
+  wiring.enabled = true;
+  document.body.classList.remove('breadboard-mode');
 });
 
 btnBreadboard.addEventListener('click', () => {
+  // Gather current components and wires
+  const components = [];
+  for (const [id, comp] of renderer.components) {
+    const spec = COMPONENT_SPECS[comp.type];
+    const pins = spec ? spec.pins.map((p) => p.name) : [];
+    components.push({ type: comp.type, id, pins });
+  }
+  const wires = [];
+  for (const wire of renderer.wires) {
+    wires.push({
+      from: wire.dataset.fromPin || '',
+      to: wire.dataset.toPin || '',
+      color: wire.getAttribute('stroke'),
+    });
+  }
+
+  // Compute layout
+  const result = computeBreadboardLayout(components, wires);
+
+  // Compute Arduino pin positions relative to breadboard overlay (translate(20, 200))
+  const overlayOffsetX = 20;
+  const overlayOffsetY = 200;
+  const pinPositions = {};
+  for (const pinEl of renderer.svg.querySelectorAll('[data-pin]')) {
+    const pinId = pinEl.getAttribute('data-pin');
+    if (!pinId || !pinId.startsWith('arduino:')) continue;
+    const pos = renderer.getPinPosition(pinId);
+    if (pos) {
+      pinPositions[pinId] = {
+        x: pos.x - overlayOffsetX,
+        y: pos.y - overlayOffsetY,
+      };
+    }
+  }
+
+  bbRenderer.render(result, pinPositions);
+
   renderer.setMode('breadboard');
   btnBreadboard.classList.add('active');
   btnSchematic.classList.remove('active');
+
+  // Disable editing in breadboard mode
+  wiring.enabled = false;
+  document.body.classList.add('breadboard-mode');
 });
 
 distanceSlider.addEventListener('input', () => {
@@ -115,7 +165,7 @@ async function compileAndSetup() {
   runtime.on('serialData', (text) => serialMonitor.append(text));
   executor = createExecutor(runtime);
   executor.setLineCallback((line) => editor.highlightLine(line));
-  new CircuitBridge(runtime, renderer, connectionGraph, componentModels);
+  new CircuitBridge(runtime, renderer, connectionGraph, componentModels, bbRenderer);
   const code = transpile(editor.getCode());
   await executor.loadAndRunSetup(code);
 }
