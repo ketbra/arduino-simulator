@@ -311,7 +311,7 @@ function generateJumperWires(wires, placements, components) {
           jumperWires.push({
             from: wire.from,
             toHole: { col: hole.col, row: hole.row },
-            color: '#22cc22',
+            color: wire.color || '#22cc22',
           });
         }
       }
@@ -324,7 +324,7 @@ function generateJumperWires(wires, placements, components) {
           jumperWires.push({
             from: wire.to,
             toHole: { col: hole.col, row: hole.row },
-            color: '#22cc22',
+            color: wire.color || '#22cc22',
           });
         }
       }
@@ -338,7 +338,7 @@ function generateJumperWires(wires, placements, components) {
           from: wire.from,
           toHole: { col: hole.col, row: hole.row },
           railType,
-          color: railType === '+' ? '#cc2222' : '#222222',
+          color: wire.color || (railType === '+' ? '#cc2222' : '#222222'),
         });
       }
     }
@@ -351,7 +351,7 @@ function generateJumperWires(wires, placements, components) {
           from: wire.to,
           toHole: { col: hole.col, row: hole.row },
           railType,
-          color: railType === '+' ? '#cc2222' : '#222222',
+          color: wire.color || (railType === '+' ? '#cc2222' : '#222222'),
         });
       }
     }
@@ -423,45 +423,70 @@ function optimizePinOrientations(placements, wires, compMap) {
   // Only optimize 2-pin straddling components (resistor, led)
   const flippable = new Set(['resistor', 'led']);
 
-  for (const wire of wires) {
-    const fromParsed = parsePinId(wire.from);
-    const toParsed = parsePinId(wire.to);
+  // Get effective row group for a pin, accounting for flips
+  function effectiveRow(pinSpec, placement) {
+    const row = pinSpec.rowGroup;
+    return placement.flipped ? (row === 'top' ? 'bot' : 'top') : row;
+  }
 
-    // Only consider component-to-component wires
-    if (fromParsed.domain !== 'component' || toParsed.domain !== 'component') continue;
+  // Process each flippable component and compute a flip score.
+  // Positive = flipping improves layout, negative = hurts.
+  // Arduino connections (long wires from above) are weighted more heavily
+  // than comp-to-comp (short cross-gap wires).
+  for (const [compId, placement] of placements) {
+    if (!flippable.has(placement.type)) continue;
 
-    const fromPlacement = placements.get(fromParsed.id);
-    const toPlacement = placements.get(toParsed.id);
-    if (!fromPlacement || !toPlacement) continue;
+    const spec = COMPONENT_SPECS[placement.type];
+    if (!spec) continue;
 
-    const fromSpec = COMPONENT_SPECS[fromPlacement.type];
-    const toSpec = COMPONENT_SPECS[toPlacement.type];
-    if (!fromSpec || !toSpec) continue;
+    let flipScore = 0;
 
-    // Get current row groups for the connected pins
-    const fromPinSpec = fromSpec.pins.find((p) => p.name === fromParsed.pin);
-    const toPinSpec = toSpec.pins.find((p) => p.name === toParsed.pin);
-    if (!fromPinSpec || !toPinSpec) continue;
+    for (const wire of wires) {
+      const fromP = parsePinId(wire.from);
+      const toP = parsePinId(wire.to);
 
-    // Check if they're in different row groups
-    const fromRow = fromPlacement.flipped
-      ? (fromPinSpec.rowGroup === 'top' ? 'bot' : 'top')
-      : fromPinSpec.rowGroup;
-    const toRow = toPlacement.flipped
-      ? (toPinSpec.rowGroup === 'top' ? 'bot' : 'top')
-      : toPinSpec.rowGroup;
+      // Find which pin of this component is involved
+      let myPinName = null;
+      let otherEnd = null;
+      if (fromP.domain === 'component' && fromP.id === compId) {
+        myPinName = fromP.pin;
+        otherEnd = wire.to;
+      } else if (toP.domain === 'component' && toP.id === compId) {
+        myPinName = toP.pin;
+        otherEnd = wire.from;
+      }
+      if (!myPinName) continue;
 
-    if (fromRow === toRow) continue; // Already same row group
+      const pinSpec = spec.pins.find((p) => p.name === myPinName);
+      if (!pinSpec) continue;
 
-    // Try flipping the 'to' component
-    if (flippable.has(toPlacement.type) && !toPlacement.flipped) {
-      toPlacement.flipped = true;
-      continue;
+      const currentRow = effectiveRow(pinSpec, placement);
+      const flippedRow = currentRow === 'top' ? 'bot' : 'top';
+
+      const otherP = parsePinId(otherEnd);
+
+      if (otherP.domain === 'arduino') {
+        // Arduino connection: prefer 'top' (wires come from above, shorter path)
+        // Weight ×2 because Arduino wires are much longer than cross-gap wires
+        if (flippedRow === 'top' && currentRow === 'bot') flipScore += 2;
+        if (flippedRow === 'bot' && currentRow === 'top') flipScore -= 2;
+      } else if (otherP.domain === 'component') {
+        // Comp-to-comp: prefer same row group as the other pin
+        const otherPlacement = placements.get(otherP.id);
+        if (!otherPlacement) continue;
+        const otherSpec = COMPONENT_SPECS[otherPlacement.type];
+        if (!otherSpec) continue;
+        const otherPinSpec = otherSpec.pins.find((p) => p.name === otherP.pin);
+        if (!otherPinSpec) continue;
+
+        const otherRow = effectiveRow(otherPinSpec, otherPlacement);
+        if (flippedRow === otherRow && currentRow !== otherRow) flipScore += 1;
+        if (flippedRow !== otherRow && currentRow === otherRow) flipScore -= 1;
+      }
     }
 
-    // Try flipping the 'from' component
-    if (flippable.has(fromPlacement.type) && !fromPlacement.flipped) {
-      fromPlacement.flipped = true;
+    if (flipScore > 0) {
+      placement.flipped = true;
     }
   }
 }

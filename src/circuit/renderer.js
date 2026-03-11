@@ -19,7 +19,7 @@ export class CircuitRenderer {
   }
 
   _initSvg() {
-    this.svg.setAttribute('viewBox', '0 0 800 600');
+    this.svg.setAttribute('viewBox', '0 -20 800 620');
     this.svg.style.width = '100%';
     this.svg.style.height = '100%';
 

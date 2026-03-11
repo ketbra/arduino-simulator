@@ -37,9 +37,14 @@ function rowGroupY(rowGroup) {
   return rowGroup === 'top' ? ROW_E_Y : ROW_F_Y;
 }
 
-/** Get the y coordinate for a wire landing in a row group (row d or g, one away from gap). */
+/** Get the y coordinate for a wire landing in a row group (row d or g, near the gap). */
 function wireRowY(rowGroup) {
   return rowGroup === 'top' ? TOP_ROW_YS[3] : BOT_ROW_YS[1]; // row d or row g
+}
+
+/** Get the y for a wire entering the breadboard from above (first row in group). */
+function wireEntryRowY(rowGroup) {
+  return rowGroup === 'top' ? TOP_ROW_YS[0] : BOT_ROW_YS[0]; // row a or row f
 }
 
 /** Get y for a power rail type. */
@@ -276,37 +281,61 @@ function renderRowHighlights(g, occupiedHoles) {
 // ---------------------------------------------------------------------------
 
 // Wire routing Y levels
-const GPIO_BUS_Y = -197;        // Above Arduino board — GPIO pins route over the top
+const GPIO_BUS_Y = -208;        // Above Arduino board — for wires going past the left edge
+const BODY_ROUTE_Y = -110;      // Mid-body of Arduino — for wires routing through the board
 const POWER_BUS_Y = -10;        // Below Arduino power pins, above breadboard
 const GPIO_PIN_THRESHOLD_Y = -100; // Pins with y < this are top-edge GPIO pins
+
+// Arduino board boundaries in overlay coords (board at SVG 270,10; overlay at 20,200)
+const ARDUINO_LEFT_X = 250;
+
+// Spacing between parallel wires in a bundle
+const WIRE_BUNDLE_SPACING = 4;
 
 /**
  * Create a routed polyline wire from an Arduino pin to a breadboard hole.
  *
- * GPIO pins (top of Arduino) route OVER the top of the board to avoid
- * crossing power wires coming from the bottom.  Power pins route with
- * a short L-shape just above the breadboard.
+ * GPIO pins route one of two ways:
+ *   - Target past left edge of Arduino: UP over the top, LEFT, DOWN (avoids board)
+ *   - Target under the Arduino: DOWN through the body, LEFT on the dark part, DOWN
+ *
+ * Power pins route with a short L-shape just above the breadboard.
+ *
+ * @param {number} busOffset - Y offset within the wire bundle (0 for first wire)
  */
-function createRoutedWire(g, pinPos, targetX, targetY, color, fromPin) {
+function createRoutedWire(g, pinPos, targetX, targetY, color, fromPin, busOffset) {
   const points = [];
 
   if (Math.abs(pinPos.x - targetX) < 2) {
     // Straight vertical wire — no horizontal routing needed
     points.push(`${pinPos.x},${pinPos.y}`, `${targetX},${targetY}`);
   } else if (pinPos.y < GPIO_PIN_THRESHOLD_Y) {
-    // Top GPIO pin — route over the top of the Arduino board
-    points.push(
-      `${pinPos.x},${pinPos.y}`,
-      `${pinPos.x},${GPIO_BUS_Y}`,
-      `${targetX},${GPIO_BUS_Y}`,
-      `${targetX},${targetY}`
-    );
+    if (targetX < ARDUINO_LEFT_X) {
+      // Target is past the left edge — route OVER the top of the Arduino
+      const busY = GPIO_BUS_Y + (busOffset || 0);
+      points.push(
+        `${pinPos.x},${pinPos.y}`,
+        `${pinPos.x},${busY}`,
+        `${targetX},${busY}`,
+        `${targetX},${targetY}`
+      );
+    } else {
+      // Target is under/right of the Arduino — route DOWN through the body
+      const busY = BODY_ROUTE_Y + (busOffset || 0);
+      points.push(
+        `${pinPos.x},${pinPos.y}`,
+        `${pinPos.x},${busY}`,
+        `${targetX},${busY}`,
+        `${targetX},${targetY}`
+      );
+    }
   } else {
     // Bottom power pin — short L-shape just above the breadboard
+    const busY = POWER_BUS_Y + (busOffset || 0);
     points.push(
       `${pinPos.x},${pinPos.y}`,
-      `${pinPos.x},${POWER_BUS_Y}`,
-      `${targetX},${POWER_BUS_Y}`,
+      `${pinPos.x},${busY}`,
+      `${targetX},${busY}`,
       `${targetX},${targetY}`
     );
   }
@@ -325,48 +354,95 @@ function createRoutedWire(g, pinPos, targetX, targetY, color, fromPin) {
 }
 
 function renderJumperWires(g, jumperWires, pinPositions) {
-  for (const wire of jumperWires) {
+  // Pre-compute bus offsets so bundled wires are visually separated.
+  // Group routed wires by which bus they use (over-top, through-body, power),
+  // then sort by target X so outer wires get outer lanes.
+  const overTopWires = [];    // GPIO wires going over the Arduino top
+  const throughBodyWires = []; // GPIO wires routing through the Arduino body
+  const powerBusWires = [];
+
+  for (let i = 0; i < jumperWires.length; i++) {
+    const wire = jumperWires[i];
+    if (!wire.from || !pinPositions || !pinPositions[wire.from]) continue;
+    const pinPos = pinPositions[wire.from];
     const toX = colToX(wire.toHole ? wire.toHole.col : 0);
-    // Wires land one row away from the gap (row d or g) to avoid sharing holes with component pins
-    const toY = wire.toHole ? wireRowY(wire.toHole.row) : 0;
+    if (Math.abs(pinPos.x - toX) < 2) continue; // straight vertical, no bus
+
+    if (pinPos.y < GPIO_PIN_THRESHOLD_Y) {
+      if (toX < ARDUINO_LEFT_X) {
+        overTopWires.push({ idx: i, targetX: toX });
+      } else {
+        throughBodyWires.push({ idx: i, targetX: toX });
+      }
+    } else if (wire.railType) {
+      powerBusWires.push({ idx: i, targetX: toX });
+    }
+  }
+
+  // Sort by target X so wires fan out neatly — leftmost wire at top of bundle
+  overTopWires.sort((a, b) => a.targetX - b.targetX);
+  throughBodyWires.sort((a, b) => a.targetX - b.targetX);
+  powerBusWires.sort((a, b) => a.targetX - b.targetX);
+
+  // Build offset map: wire index → bus Y offset
+  const busOffsets = new Map();
+  overTopWires.forEach((w, i) => {
+    busOffsets.set(w.idx, i * WIRE_BUNDLE_SPACING);
+  });
+  throughBodyWires.forEach((w, i) => {
+    busOffsets.set(w.idx, i * WIRE_BUNDLE_SPACING);
+  });
+  powerBusWires.forEach((w, i) => {
+    busOffsets.set(w.idx, i * WIRE_BUNDLE_SPACING);
+  });
+
+  for (let i = 0; i < jumperWires.length; i++) {
+    const wire = jumperWires[i];
+    const toX = colToX(wire.toHole ? wire.toHole.col : 0);
     const color = wire.color || '#22cc22';
+    const offset = busOffsets.get(i) || 0;
+
+    // Arduino-to-breadboard wires stop at the first row (a or f) — shortest path.
+    // Component-to-component wires use rows near the gap (d or g) to stay close to pins.
+    const entryY = wire.toHole ? wireEntryRowY(wire.toHole.row) : 0;
+    const compY = wire.toHole ? wireRowY(wire.toHole.row) : 0;
 
     if (wire.railType && wire.from && pinPositions && pinPositions[wire.from]) {
-      // Power wire: Arduino pin → rail, then rail → component wire row
+      // Power wire: Arduino pin → rail, then rail → first row in group
       const pinPos = pinPositions[wire.from];
       const ry = railY(wire.railType);
-      createRoutedWire(g, pinPos, toX, ry, color, wire.from);
-      // Rail to component wire row (vertical)
+      createRoutedWire(g, pinPos, toX, ry, color, wire.from, offset);
+      // Rail to first available row (vertical)
       g.appendChild(svgEl('line', {
-        x1: toX, y1: ry, x2: toX, y2: toY,
+        x1: toX, y1: ry, x2: toX, y2: entryY,
         stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round',
         class: 'bb-jumper',
       }));
     } else if (wire.railType) {
-      // Power rail wire (no pin position): vertical from rail to wire row
+      // Power rail wire (no pin position): vertical from rail to first row
       const attrs = {
-        x1: toX, y1: railY(wire.railType), x2: toX, y2: toY,
+        x1: toX, y1: railY(wire.railType), x2: toX, y2: entryY,
         stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round',
         class: 'bb-jumper',
       };
       if (wire.from) attrs['data-from-pin'] = wire.from;
       g.appendChild(svgEl('line', attrs));
     } else if (wire.from && wire.toHole && pinPositions && pinPositions[wire.from]) {
-      // Arduino GPIO → breadboard wire row (routed L-shape)
-      createRoutedWire(g, pinPositions[wire.from], toX, toY, color, wire.from);
+      // Arduino GPIO → first row in group (routed L-shape)
+      createRoutedWire(g, pinPositions[wire.from], toX, entryY, color, wire.from, offset);
     } else if (wire.from && wire.toHole) {
-      // Fallback: straight down
+      // Fallback: straight down to first row
       g.appendChild(svgEl('line', {
-        x1: toX, y1: ARDUINO_WIRE_Y, x2: toX, y2: toY,
+        x1: toX, y1: ARDUINO_WIRE_Y, x2: toX, y2: entryY,
         stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round',
         class: 'bb-jumper', 'data-from-pin': wire.from,
       }));
     } else if (wire.fromHole && wire.toHole) {
-      // Component-to-component wire (use wire rows to avoid pin holes)
+      // Component-to-component wire (use wire rows near gap to stay close to pins)
       const fromX = colToX(wire.fromHole.col);
       const fromY = wireRowY(wire.fromHole.row);
       g.appendChild(svgEl('line', {
-        x1: fromX, y1: fromY, x2: toX, y2: toY,
+        x1: fromX, y1: fromY, x2: toX, y2: compY,
         stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round',
         class: 'bb-jumper',
       }));
