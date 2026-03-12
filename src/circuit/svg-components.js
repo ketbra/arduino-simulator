@@ -198,15 +198,15 @@ export function renderBreadboard(x, y) {
 
 export function renderLedComponent(x, y, id) {
   const g = svgEl('g', { transform: `translate(${x},${y})`, class: 'component led', 'data-component-id': id });
-  addPinWithHitArea(g, { cx: -6, cy: -16, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:anode` }, 'LED anode (+)');
-  addPinWithHitArea(g, { cx: 6, cy: -16, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:cathode` }, 'LED cathode (-)');
-  const aText = svgEl('text', { x: -6, y: -24, 'text-anchor': 'middle', fill: '#888', 'font-size': 6 });
+  addPinWithHitArea(g, { cx: -9, cy: -22, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:anode` }, 'LED anode (+)');
+  addPinWithHitArea(g, { cx: 9, cy: -22, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:cathode` }, 'LED cathode (-)');
+  const aText = svgEl('text', { x: -9, y: -30, 'text-anchor': 'middle', fill: '#555', 'font-size': 9, 'font-weight': 'bold' });
   aText.textContent = '+';
   g.appendChild(aText);
-  const cText = svgEl('text', { x: 6, y: -24, 'text-anchor': 'middle', fill: '#888', 'font-size': 6 });
+  const cText = svgEl('text', { x: 9, y: -30, 'text-anchor': 'middle', fill: '#555', 'font-size': 9, 'font-weight': 'bold' });
   cText.textContent = '-';
   g.appendChild(cText);
-  g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 12, fill: '#ff000030', stroke: '#cc0000', 'stroke-width': 2, class: 'led-body' }));
+  g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 16, fill: '#ff000030', stroke: '#cc0000', 'stroke-width': 2, class: 'led-body' }));
   return g;
 }
 
@@ -216,14 +216,14 @@ export function renderRgbLedComponent(x, y, id) {
   const pinLabels = ['+', 'R', 'G', 'B'];
   const pinTooltips = ['Common Anode (+)', 'Red', 'Green', 'Blue'];
   pinNames.forEach((name, i) => {
-    const px = (i - 1.5) * 10;
-    addPinWithHitArea(g, { cx: px, cy: -18, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:${name}` }, pinTooltips[i]);
-    const t = svgEl('text', { x: px, y: -26, 'text-anchor': 'middle', fill: '#888', 'font-size': 7 });
+    const px = (i - 1.5) * 14;
+    addPinWithHitArea(g, { cx: px, cy: -26, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:${name}` }, pinTooltips[i]);
+    const t = svgEl('text', { x: px, y: -34, 'text-anchor': 'middle', fill: '#555', 'font-size': 9, 'font-weight': 'bold' });
     t.textContent = pinLabels[i];
     g.appendChild(t);
   });
-  g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 14, fill: '#ffffff20', stroke: '#999', 'stroke-width': 2, class: 'rgb-led-body' }));
-  const label = svgEl('text', { x: 0, y: 4, 'text-anchor': 'middle', fill: '#666', 'font-size': 8 });
+  g.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 20, fill: '#ffffff20', stroke: '#999', 'stroke-width': 2, class: 'rgb-led-body' }));
+  const label = svgEl('text', { x: 0, y: 5, 'text-anchor': 'middle', fill: '#666', 'font-size': 10 });
   label.textContent = 'RGB';
   g.appendChild(label);
   return g;
@@ -231,27 +231,27 @@ export function renderRgbLedComponent(x, y, id) {
 
 export function renderResistorComponent(x, y, id) {
   const g = svgEl('g', { transform: `translate(${x},${y})`, class: 'component resistor', 'data-component-id': id });
-  g.appendChild(svgEl('rect', { x: -16, y: -5, width: 32, height: 10, rx: 2, fill: '#d4b896', stroke: '#8b7355', 'stroke-width': 1 }));
-  g.appendChild(svgEl('rect', { x: -10, y: -5, width: 3, height: 10, fill: '#cc0000' }));
-  g.appendChild(svgEl('rect', { x: -4, y: -5, width: 3, height: 10, fill: '#cc0000' }));
-  g.appendChild(svgEl('rect', { x: 2, y: -5, width: 3, height: 10, fill: '#8b4513' }));
-  addPinWithHitArea(g, { cx: -22, cy: 0, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin1` }, 'Resistor Pin 1');
-  addPinWithHitArea(g, { cx: 22, cy: 0, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin2` }, 'Resistor Pin 2');
+  g.appendChild(svgEl('rect', { x: -22, y: -7, width: 44, height: 14, rx: 2, fill: '#d4b896', stroke: '#8b7355', 'stroke-width': 1 }));
+  g.appendChild(svgEl('rect', { x: -14, y: -7, width: 4, height: 14, fill: '#cc0000' }));
+  g.appendChild(svgEl('rect', { x: -6, y: -7, width: 4, height: 14, fill: '#cc0000' }));
+  g.appendChild(svgEl('rect', { x: 2, y: -7, width: 4, height: 14, fill: '#8b4513' }));
+  addPinWithHitArea(g, { cx: -30, cy: 0, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin1` }, 'Resistor Pin 1');
+  addPinWithHitArea(g, { cx: 30, cy: 0, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin2` }, 'Resistor Pin 2');
   return g;
 }
 
 export function renderPushButtonComponent(x, y, id) {
   const g = svgEl('g', { transform: `translate(${x},${y})`, class: 'component push-button', 'data-component-id': id });
-  g.appendChild(svgEl('rect', { x: -14, y: -14, width: 28, height: 28, rx: 3, fill: '#555', stroke: '#333', 'stroke-width': 1 }));
-  addPinWithHitArea(g, { cx: -14, cy: -14, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin1a` }, 'Button Pin 1A');
-  addPinWithHitArea(g, { cx: 14, cy: -14, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin1b` }, 'Button Pin 1B');
-  addPinWithHitArea(g, { cx: -14, cy: 14, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin2a` }, 'Button Pin 2A');
-  addPinWithHitArea(g, { cx: 14, cy: 14, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin2b` }, 'Button Pin 2B');
+  g.appendChild(svgEl('rect', { x: -18, y: -18, width: 36, height: 36, rx: 3, fill: '#555', stroke: '#333', 'stroke-width': 1 }));
+  addPinWithHitArea(g, { cx: -18, cy: -18, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin1a` }, 'Button Pin 1A');
+  addPinWithHitArea(g, { cx: 18, cy: -18, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin1b` }, 'Button Pin 1B');
+  addPinWithHitArea(g, { cx: -18, cy: 18, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin2a` }, 'Button Pin 2A');
+  addPinWithHitArea(g, { cx: 18, cy: 18, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:pin2b` }, 'Button Pin 2B');
   // Button cap covers the entire body area, on top of pin hit areas
-  const cap = svgEl('rect', { x: -12, y: -12, width: 24, height: 24, rx: 3, fill: '#777', stroke: '#666', class: 'button-cap' });
+  const cap = svgEl('rect', { x: -15, y: -15, width: 30, height: 30, rx: 3, fill: '#777', stroke: '#666', class: 'button-cap' });
   cap.style.cursor = 'pointer';
   g.appendChild(cap);
-  const capDot = svgEl('circle', { cx: 0, cy: 0, r: 5, fill: '#999', class: 'button-cap-dot' });
+  const capDot = svgEl('circle', { cx: 0, cy: 0, r: 6, fill: '#999', class: 'button-cap-dot' });
   capDot.style.pointerEvents = 'none';
   g.appendChild(capDot);
 
@@ -261,7 +261,7 @@ export function renderPushButtonComponent(x, y, id) {
     pressed = !pressed;
     cap.setAttribute('fill', pressed ? '#999' : '#777');
     capDot.setAttribute('fill', pressed ? '#ccc' : '#999');
-    capDot.setAttribute('r', pressed ? 4 : 5);
+    capDot.setAttribute('r', pressed ? 5 : 6);
     g.dispatchEvent(new CustomEvent('buttonToggle', { detail: { id, pressed }, bubbles: true }));
   });
   return g;
@@ -270,18 +270,22 @@ export function renderPushButtonComponent(x, y, id) {
 export function renderUltrasonicComponent(x, y, id) {
   const g = svgEl('g', { transform: `translate(${x},${y})`, class: 'component ultrasonic', 'data-component-id': id });
   const pinNames = ['vcc', 'trig', 'echo', 'gnd'];
+  const pinLabels = ['VCC', 'TRIG', 'ECHO', 'GND'];
   const pinTooltips = ['VCC (+5V)', 'Trigger', 'Echo', 'GND'];
+  // Pins run vertically down the right side, labels to the right of each pin
   pinNames.forEach((name, i) => {
-    const px = (i - 1.5) * 14;
-    addPinWithHitArea(g, { cx: px, cy: -20, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:${name}` }, pinTooltips[i]);
-    const t = svgEl('text', { x: px, y: -28, 'text-anchor': 'middle', fill: '#888', 'font-size': 6 });
-    t.textContent = name;
+    const py = (i - 1.5) * 16;
+    addPinWithHitArea(g, { cx: 30, cy: py, r: 5, fill: '#888', class: 'pin-marker', 'data-pin': `component:${id}:${name}` }, pinTooltips[i]);
+    const t = svgEl('text', { x: 38, y: py + 4, 'text-anchor': 'start', fill: '#555', 'font-size': 9, 'font-weight': 'bold' });
+    t.textContent = pinLabels[i];
     g.appendChild(t);
   });
-  g.appendChild(svgEl('rect', { x: -28, y: -16, width: 56, height: 32, rx: 3, fill: '#2277bb', stroke: '#1a5c8a', 'stroke-width': 1 }));
-  g.appendChild(svgEl('circle', { cx: -10, cy: 0, r: 9, fill: '#ccc', stroke: '#999' }));
-  g.appendChild(svgEl('circle', { cx: 10, cy: 0, r: 9, fill: '#ccc', stroke: '#999' }));
-  const label = svgEl('text', { x: 0, y: 20, 'text-anchor': 'middle', fill: '#666', 'font-size': 7 });
+  // Body rect (portrait orientation)
+  g.appendChild(svgEl('rect', { x: -20, y: -36, width: 40, height: 72, rx: 3, fill: '#2277bb', stroke: '#1a5c8a', 'stroke-width': 1 }));
+  // Transducer "eyes" stacked vertically
+  g.appendChild(svgEl('circle', { cx: 0, cy: -13, r: 12, fill: '#ccc', stroke: '#999' }));
+  g.appendChild(svgEl('circle', { cx: 0, cy: 13, r: 12, fill: '#ccc', stroke: '#999' }));
+  const label = svgEl('text', { x: -28, y: 4, 'text-anchor': 'end', fill: '#666', 'font-size': 9 });
   label.textContent = 'HC-SR04';
   g.appendChild(label);
   return g;
@@ -290,9 +294,41 @@ export function renderUltrasonicComponent(x, y, id) {
 export function renderWire(x1, y1, x2, y2, color = '#22cc22') {
   return svgEl('line', {
     x1, y1, x2, y2,
-    stroke: color, 'stroke-width': 2.5, 'stroke-linecap': 'round',
+    stroke: color, 'stroke-width': 3, 'stroke-linecap': 'round',
     class: 'wire',
   });
+}
+
+export function renderShortCircuitWarning(x, y) {
+  const g = svgEl('g', { class: 'short-circuit-warning', transform: `translate(${x},${y})` });
+
+  // Warning triangle
+  g.appendChild(svgEl('polygon', {
+    points: '0,-20 -18,12 18,12',
+    fill: '#ff0000',
+    stroke: '#cc0000',
+    'stroke-width': 2,
+    filter: 'drop-shadow(0 0 6px #ff0000)',
+  }));
+
+  // Exclamation mark
+  const bang = svgEl('text', {
+    x: 0, y: 8, 'text-anchor': 'middle',
+    fill: '#fff', 'font-size': 18, 'font-weight': 'bold',
+  });
+  bang.textContent = '!';
+  g.appendChild(bang);
+
+  // "SHORT CIRCUIT!" label
+  const label = svgEl('text', {
+    x: 0, y: 30, 'text-anchor': 'middle',
+    fill: '#ff0000', 'font-size': 11, 'font-weight': 'bold',
+    filter: 'drop-shadow(0 0 4px #ff0000)',
+  });
+  label.textContent = 'SHORT CIRCUIT!';
+  g.appendChild(label);
+
+  return g;
 }
 
 export function renderSmokeEffect(x, y) {

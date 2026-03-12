@@ -83,4 +83,69 @@ describe('ConnectionGraph', () => {
       expect(path).toEqual(['A', 'B']);
     });
   });
+
+  describe('addInternalWire', () => {
+    it('creates a normal edge and records it as internal', () => {
+      const graph = new ConnectionGraph();
+      graph.addInternalWire('A', 'B');
+      expect(graph.areConnected('A', 'B')).toBe(true);
+      expect(graph.isInternalEdge('A', 'B')).toBe(true);
+      expect(graph.isInternalEdge('B', 'A')).toBe(true);
+    });
+
+    it('regular addWire is not internal', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      expect(graph.isInternalEdge('A', 'B')).toBe(false);
+    });
+  });
+
+  describe('findPathExcludingInternal', () => {
+    it('finds path using only external edges', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      graph.addWire('B', 'C');
+      const path = graph.findPathExcludingInternal('A', ['C']);
+      expect(path).toEqual(['A', 'B', 'C']);
+    });
+
+    it('skips internal edges', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      graph.addInternalWire('B', 'C');
+      graph.addWire('C', 'D');
+      // Only path A→B→C→D exists, but B→C is internal, so no external-only path
+      const path = graph.findPathExcludingInternal('A', ['D']);
+      expect(path).toBeNull();
+    });
+
+    it('returns null when only path goes through internal edge', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('5V', 'component:r1:pin1');
+      graph.addInternalWire('component:r1:pin1', 'component:r1:pin2');
+      graph.addWire('component:r1:pin2', 'GND');
+      const path = graph.findPathExcludingInternal('5V', ['GND']);
+      expect(path).toBeNull();
+    });
+
+    it('finds path when alternative external route exists', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      graph.addInternalWire('B', 'C'); // internal
+      graph.addWire('A', 'D');
+      graph.addWire('D', 'C');
+      const path = graph.findPathExcludingInternal('A', ['C']);
+      expect(path).not.toBeNull();
+      expect(path[0]).toBe('A');
+      expect(path[path.length - 1]).toBe('C');
+    });
+
+    it('clear() clears internal edges', () => {
+      const graph = new ConnectionGraph();
+      graph.addInternalWire('A', 'B');
+      graph.clear();
+      expect(graph.isInternalEdge('A', 'B')).toBe(false);
+      expect(graph.edges.size).toBe(0);
+    });
+  });
 });

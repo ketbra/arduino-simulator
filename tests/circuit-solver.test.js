@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ConnectionGraph } from '../src/circuit/connection-graph.js';
-import { solveCircuit, LED_FORWARD_VOLTAGE, LED_INTERNAL_RESISTANCE, NOMINAL_LED_CURRENT, MAX_LED_CURRENT } from '../src/circuit/circuit-solver.js';
+import { solveCircuit, detectShortCircuits, LED_FORWARD_VOLTAGE, LED_INTERNAL_RESISTANCE, NOMINAL_LED_CURRENT, MAX_LED_CURRENT } from '../src/circuit/circuit-solver.js';
 import { LED } from '../src/circuit/components/led.js';
 import { RgbLed } from '../src/circuit/components/rgb-led.js';
 import { Resistor } from '../src/circuit/components/resistor.js';
@@ -11,10 +11,13 @@ const STATIC_POWER = [
   { node: 'arduino:3V3', voltage: 3.3 },
 ];
 
-function buildGraph(wires) {
+function buildGraph(wires, internalWires = []) {
   const graph = new ConnectionGraph();
   for (const [a, b] of wires) {
     graph.addWire(a, b);
+  }
+  for (const [a, b] of internalWires) {
+    graph.addInternalWire(a, b);
   }
   return graph;
 }
@@ -289,5 +292,89 @@ describe('solveCircuit', () => {
     // Blue: (5-2.51-2)/220 = 0.49/220 → brightness ≈ 0.111 → ~28
     expect(rgb.color.b).toBeGreaterThan(0);
     expect(rgb.color.b).toBeLessThan(100);
+  });
+});
+
+describe('detectShortCircuits', () => {
+  it('detects direct wire from 5V to GND', () => {
+    const graph = buildGraph([
+      ['arduino:5V', 'arduino:GND'],
+    ]);
+    const shorts = detectShortCircuits(graph, STATIC_POWER, GND_NODES);
+    expect(shorts.length).toBeGreaterThan(0);
+    expect(shorts[0].powerNode).toBe('arduino:5V');
+    expect(shorts[0].groundNode).toBe('arduino:GND');
+  });
+
+  it('detects short when both wires go to same resistor terminal', () => {
+    // 5V → r1:pin1, r1:pin1 → GND (resistor bypassed, both wires on pin1)
+    const graph = buildGraph(
+      [
+        ['arduino:5V', 'component:r1:pin1'],
+        ['component:r1:pin1', 'arduino:GND'],
+      ],
+      [['component:r1:pin1', 'component:r1:pin2']], // internal edge
+    );
+    const shorts = detectShortCircuits(graph, STATIC_POWER, GND_NODES);
+    expect(shorts.length).toBeGreaterThan(0);
+  });
+
+  it('does NOT detect short through proper resistor load', () => {
+    const graph = buildGraph(
+      [
+        ['arduino:5V', 'component:r1:pin1'],
+        ['component:r1:pin2', 'arduino:GND'],
+      ],
+      [['component:r1:pin1', 'component:r1:pin2']], // internal edge
+    );
+    const shorts = detectShortCircuits(graph, STATIC_POWER, GND_NODES);
+    expect(shorts.length).toBe(0);
+  });
+
+  it('does NOT detect short through proper LED load', () => {
+    const graph = buildGraph(
+      [
+        ['arduino:5V', 'component:led1:anode'],
+        ['component:led1:cathode', 'arduino:GND'],
+      ],
+      [['component:led1:anode', 'component:led1:cathode']], // internal edge
+    );
+    const shorts = detectShortCircuits(graph, STATIC_POWER, GND_NODES);
+    expect(shorts.length).toBe(0);
+  });
+
+  it('does NOT detect short when no path to GND', () => {
+    const graph = buildGraph([
+      ['arduino:5V', 'component:r1:pin1'],
+    ]);
+    const shorts = detectShortCircuits(graph, STATIC_POWER, GND_NODES);
+    expect(shorts.length).toBe(0);
+  });
+
+  it('detects short from GPIO pin HIGH wired to GND', () => {
+    const graph = buildGraph([
+      ['arduino:pin13', 'arduino:GND'],
+    ]);
+    const powerSources = [
+      ...STATIC_POWER,
+      { node: 'arduino:pin13', voltage: 5.0 },
+    ];
+    const shorts = detectShortCircuits(graph, powerSources, GND_NODES);
+    const gpioShort = shorts.find(s => s.powerNode === 'arduino:pin13');
+    expect(gpioShort).toBeDefined();
+  });
+
+  it('does NOT detect short from GPIO pin LOW (0V)', () => {
+    const graph = buildGraph([
+      ['arduino:pin13', 'arduino:GND'],
+    ]);
+    const powerSources = [
+      ...STATIC_POWER,
+      { node: 'arduino:pin13', voltage: 0 },
+    ];
+    const shorts = detectShortCircuits(graph, powerSources, GND_NODES);
+    // pin13 at 0V shouldn't trigger, but 5V and 3V3 aren't connected to GND either
+    const gpioShort = shorts.find(s => s.powerNode === 'arduino:pin13');
+    expect(gpioShort).toBeUndefined();
   });
 });

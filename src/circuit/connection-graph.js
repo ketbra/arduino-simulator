@@ -1,6 +1,7 @@
 export class ConnectionGraph {
   constructor() {
     this.edges = new Map();
+    this.internalEdges = new Set();
   }
 
   _ensureNode(node) {
@@ -12,6 +13,16 @@ export class ConnectionGraph {
     this._ensureNode(nodeB);
     this.edges.get(nodeA).add(nodeB);
     this.edges.get(nodeB).add(nodeA);
+  }
+
+  addInternalWire(nodeA, nodeB) {
+    this.addWire(nodeA, nodeB);
+    this.internalEdges.add(`${nodeA}|${nodeB}`);
+    this.internalEdges.add(`${nodeB}|${nodeA}`);
+  }
+
+  isInternalEdge(nodeA, nodeB) {
+    return this.internalEdges.has(`${nodeA}|${nodeB}`);
   }
 
   removeWire(nodeA, nodeB) {
@@ -83,7 +94,40 @@ export class ConnectionGraph {
     return null;
   }
 
+  findPathExcludingInternal(startNode, endNodes) {
+    const endSet = new Set(Array.isArray(endNodes) ? endNodes : [endNodes]);
+    const visited = new Set();
+    const parent = new Map();
+    const queue = [startNode];
+    visited.add(startNode);
+
+    while (queue.length > 0) {
+      const node = queue.shift();
+      if (endSet.has(node)) {
+        const path = [];
+        let current = node;
+        while (current !== undefined) {
+          path.unshift(current);
+          current = parent.get(current);
+        }
+        return path;
+      }
+      const neighbors = this.edges.get(node);
+      if (neighbors) {
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor) && !this.isInternalEdge(node, neighbor)) {
+            visited.add(neighbor);
+            parent.set(neighbor, node);
+            queue.push(neighbor);
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   clear() {
     this.edges.clear();
+    this.internalEdges.clear();
   }
 }

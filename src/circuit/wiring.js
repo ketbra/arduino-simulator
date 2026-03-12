@@ -269,9 +269,9 @@ export class WiringSystem {
     if (!this._previewLine) {
       const NS = 'http://www.w3.org/2000/svg';
       this._previewLine = document.createElementNS(NS, 'line');
-      this._previewLine.setAttribute('stroke', '#ffcc0088');
-      this._previewLine.setAttribute('stroke-width', '2');
-      this._previewLine.setAttribute('stroke-dasharray', '4,4');
+      this._previewLine.setAttribute('stroke', '#ffcc00cc');
+      this._previewLine.setAttribute('stroke-width', '3');
+      this._previewLine.setAttribute('stroke-dasharray', '6,3');
       this._previewLine.style.pointerEvents = 'none';
       this.svg.appendChild(this._previewLine);
     }

@@ -1,4 +1,4 @@
-import { solveCircuit } from '../circuit/circuit-solver.js';
+import { solveCircuit, detectShortCircuits } from '../circuit/circuit-solver.js';
 
 const GND_NODES = ['arduino:GND', 'arduino:GND2'];
 
@@ -68,6 +68,16 @@ export class CircuitBridge {
         model.burnedOut = result.burnedOut;
         this._updateRgbLed(id, model.color, model.burnedOut);
       }
+    }
+
+    // Short circuit detection
+    const shorts = detectShortCircuits(this.graph, powerSources, GND_NODES);
+    if (shorts.length > 0) {
+      this.renderer.showShortCircuit(shorts);
+      if (this.bbRenderer) this.bbRenderer.showShortCircuit(shorts);
+    } else {
+      this.renderer.clearShortCircuit();
+      if (this.bbRenderer) this.bbRenderer.clearShortCircuit();
     }
   }
 }

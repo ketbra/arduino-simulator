@@ -57,6 +57,22 @@ export function solveCircuit(graph, componentModels, powerSources, groundNodes) 
   return results;
 }
 
+export function detectShortCircuits(graph, powerSources, groundNodes) {
+  const gndNodes = groundNodes || GND_NODES;
+  const powerMap = buildPowerMap(powerSources);
+  const shorts = [];
+
+  for (const [powerNode, voltage] of powerMap) {
+    if (voltage <= 0) continue;
+    const path = graph.findPathExcludingInternal(powerNode, gndNodes);
+    if (path) {
+      shorts.push({ path, powerNode, groundNode: path[path.length - 1] });
+    }
+  }
+
+  return shorts;
+}
+
 function buildPowerMap(powerSources) {
   const powerMap = new Map();
   for (const ps of powerSources) {

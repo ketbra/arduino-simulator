@@ -120,14 +120,14 @@ function renderBBLed(g, placement) {
   // +/- labels
   const plusLabel = svgEl('text', {
     x: cx - 6, y: ROW_E_Y - 3, 'text-anchor': 'middle',
-    fill: '#888', 'font-size': 6,
+    fill: '#555', 'font-size': 8, 'font-weight': 'bold',
   });
   plusLabel.textContent = '+';
   compG.appendChild(plusLabel);
 
   const minusLabel = svgEl('text', {
     x: cx + 6, y: ROW_F_Y + 8, 'text-anchor': 'middle',
-    fill: '#888', 'font-size': 6,
+    fill: '#555', 'font-size': 8, 'font-weight': 'bold',
   });
   minusLabel.textContent = '-';
   compG.appendChild(minusLabel);
@@ -200,7 +200,7 @@ function renderBBRgbLed(g, placement) {
     }));
     const label = svgEl('text', {
       x: px, y: ROW_E_Y - 3, 'text-anchor': 'middle',
-      fill: '#888', 'font-size': 6,
+      fill: '#555', 'font-size': 8, 'font-weight': 'bold',
     });
     label.textContent = pinLabels[i];
     compG.appendChild(label);
@@ -243,7 +243,7 @@ function renderBBUltrasonic(g, placement) {
     }));
     const label = svgEl('text', {
       x: px, y: bodyTop - 2, 'text-anchor': 'middle',
-      fill: '#666', 'font-size': 5,
+      fill: '#444', 'font-size': 7, 'font-weight': 'bold',
     });
     label.textContent = pinLabels[i];
     compG.appendChild(label);
@@ -357,7 +357,7 @@ function createRoutedWire(g, pinPos, targetX, targetY, color, fromPin, busOffset
     points: points.join(' '),
     fill: 'none',
     stroke: color,
-    'stroke-width': 2,
+    'stroke-width': 3,
     'stroke-linecap': 'round',
     'stroke-linejoin': 'round',
     class: 'bb-jumper',
@@ -428,14 +428,14 @@ function renderJumperWires(g, jumperWires, pinPositions) {
       // Rail to first available row (vertical)
       g.appendChild(svgEl('line', {
         x1: toX, y1: ry, x2: toX, y2: entryY,
-        stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round',
+        stroke: color, 'stroke-width': 3, 'stroke-linecap': 'round',
         class: 'bb-jumper',
       }));
     } else if (wire.railType) {
       // Power rail wire (no pin position): vertical from rail to first row
       const attrs = {
         x1: toX, y1: railY(wire.railType), x2: toX, y2: entryY,
-        stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round',
+        stroke: color, 'stroke-width': 3, 'stroke-linecap': 'round',
         class: 'bb-jumper',
       };
       if (wire.from) attrs['data-from-pin'] = wire.from;
@@ -447,7 +447,7 @@ function renderJumperWires(g, jumperWires, pinPositions) {
       // Fallback: straight down to first row
       g.appendChild(svgEl('line', {
         x1: toX, y1: ARDUINO_WIRE_Y, x2: toX, y2: entryY,
-        stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round',
+        stroke: color, 'stroke-width': 3, 'stroke-linecap': 'round',
         class: 'bb-jumper', 'data-from-pin': wire.from,
       }));
     } else if (wire.fromHole && wire.toHole) {
@@ -456,7 +456,7 @@ function renderJumperWires(g, jumperWires, pinPositions) {
       const fromY = wireRowY(wire.fromHole.row);
       g.appendChild(svgEl('line', {
         x1: fromX, y1: fromY, x2: toX, y2: compY,
-        stroke: color, 'stroke-width': 2, 'stroke-linecap': 'round',
+        stroke: color, 'stroke-width': 3, 'stroke-linecap': 'round',
         class: 'bb-jumper',
       }));
     }
@@ -652,6 +652,31 @@ export class BreadboardRenderer {
       const { r, g, b } = color;
       const brightness = Math.max(r, g, b) / 255;
       body.setAttribute('fill', `rgba(${r}, ${g}, ${b}, ${0.2 + brightness * 0.8})`);
+    }
+  }
+
+  showShortCircuit(shorts) {
+    this.clearShortCircuit();
+    if (!this._overlay) return;
+
+    const shortNodes = new Set();
+    for (const s of shorts) {
+      for (const node of s.path) shortNodes.add(node);
+    }
+
+    // Highlight bb-jumper elements whose from-pin is in the short path
+    for (const el of this._overlay.querySelectorAll('.bb-jumper')) {
+      const fromPin = el.getAttribute('data-from-pin') || '';
+      if (shortNodes.has(fromPin)) {
+        el.classList.add('wire-short');
+      }
+    }
+  }
+
+  clearShortCircuit() {
+    if (!this._overlay) return;
+    for (const el of this._overlay.querySelectorAll('.wire-short')) {
+      el.classList.remove('wire-short');
     }
   }
 

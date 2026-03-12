@@ -27,6 +27,8 @@ function createMockRenderer() {
   return {
     updateLed: vi.fn(),
     updateRgbLed: vi.fn(),
+    showShortCircuit: vi.fn(),
+    clearShortCircuit: vi.fn(),
   };
 }
 

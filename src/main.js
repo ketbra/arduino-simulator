@@ -14,7 +14,7 @@ import { projects } from './projects/index.js';
 import { CircuitBridge } from './simulator/circuit-bridge.js';
 import { LED, RgbLed, Resistor } from './circuit/components/index.js';
 import { createUndoManager } from './ui/undo-manager.js';
-import { solveCircuit } from './circuit/circuit-solver.js';
+import { solveCircuit, detectShortCircuits } from './circuit/circuit-solver.js';
 
 // --- Dirty State (Feature 4) ---
 let dirty = false;
@@ -40,12 +40,12 @@ createComponentPalette(document.getElementById('component-palette'), (type, id, 
   // Register component models so CircuitBridge can update visuals
   if (type === 'led') {
     componentModels.set(id, new LED(id));
-    connectionGraph.addWire(`component:${id}:anode`, `component:${id}:cathode`);
+    connectionGraph.addInternalWire(`component:${id}:anode`, `component:${id}:cathode`);
   }
   if (type === 'rgb-led') componentModels.set(id, new RgbLed(id));
   if (type === 'resistor') {
     componentModels.set(id, new Resistor(id));
-    connectionGraph.addWire(`component:${id}:pin1`, `component:${id}:pin2`);
+    connectionGraph.addInternalWire(`component:${id}:pin1`, `component:${id}:pin2`);
   }
   undoManager.push({ type: 'add-component', data: { type, id, x, y } });
   markDirty();
@@ -85,6 +85,16 @@ function evaluateStaticConnections(extraPowerSources) {
       renderer.updateRgbLed(id, model.color, model.burnedOut);
       bbRenderer.updateRgbLed(id, model.color, model.burnedOut);
     }
+  }
+
+  // Short circuit detection
+  const shorts = detectShortCircuits(connectionGraph, powerSources, GND_NODES);
+  if (shorts.length > 0) {
+    renderer.showShortCircuit(shorts);
+    bbRenderer.showShortCircuit(shorts);
+  } else {
+    renderer.clearShortCircuit();
+    bbRenderer.clearShortCircuit();
   }
 }
 
@@ -320,12 +330,12 @@ function loadProject(project) {
     renderer.addComponent(comp.type, comp.id, comp.x, comp.y);
     if (comp.type === 'led') {
       componentModels.set(comp.id, new LED(comp.id));
-      connectionGraph.addWire(`component:${comp.id}:anode`, `component:${comp.id}:cathode`);
+      connectionGraph.addInternalWire(`component:${comp.id}:anode`, `component:${comp.id}:cathode`);
     }
     if (comp.type === 'rgb-led') componentModels.set(comp.id, new RgbLed(comp.id));
     if (comp.type === 'resistor') {
       componentModels.set(comp.id, new Resistor(comp.id, comp.ohms));
-      connectionGraph.addWire(`component:${comp.id}:pin1`, `component:${comp.id}:pin2`);
+      connectionGraph.addInternalWire(`component:${comp.id}:pin1`, `component:${comp.id}:pin2`);
     }
   }
 
@@ -479,11 +489,12 @@ renderer.svg.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   hideContextMenu();
 
-  // Check if right-clicked on a wire
-  if (e.target.tagName === 'line' && renderer.wires.includes(e.target)) {
-    renderer.selectWire(e.target);
+  // Check if right-clicked on a wire (or its hit-area)
+  const clickedWire = renderer.getWireFromTarget(e.target);
+  if (clickedWire) {
+    renderer.selectWire(clickedWire);
     showContextMenu(e.clientX, e.clientY, 'Delete Wire', () => {
-      deleteSelectedWire(e.target);
+      deleteSelectedWire(clickedWire);
     });
     return;
   }
@@ -514,6 +525,7 @@ function deleteSelectedComponent(id) {
     componentModels.delete(id);
     undoManager.push({ type: 'remove-component', data: result });
     markDirty();
+    evaluateStaticConnections();
   }
 }
 
@@ -524,6 +536,7 @@ function deleteSelectedWire(wireEl) {
     connectionGraph.removeWire(info.from, info.to);
     undoManager.push({ type: 'remove-wire', data: info });
     markDirty();
+    evaluateStaticConnections();
   }
 }
 
@@ -556,8 +569,9 @@ document.addEventListener('keydown', (e) => {
 
 // --- Wire click selection (Feature 1) ---
 renderer.svg.addEventListener('click', (e) => {
-  if (e.target.tagName === 'line' && renderer.wires.includes(e.target)) {
-    renderer.selectWire(e.target);
+  const clickedWire = renderer.getWireFromTarget(e.target);
+  if (clickedWire) {
+    renderer.selectWire(clickedWire);
   }
 });
 
