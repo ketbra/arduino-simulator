@@ -1,0 +1,144 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: Arduino Simulator
+    - generic [ref=e5]:
+      - button "Save" [ref=e6] [cursor=pointer]
+      - button "Load" [ref=e7] [cursor=pointer]
+    - combobox [ref=e8] [cursor=pointer]:
+      - option "Load Example..."
+      - option "LED Blink"
+      - option "Button-Controlled LED" [selected]
+      - option "RGB LED Multicolor"
+      - option "Ultrasonic Distance-to-Color"
+    - generic [ref=e9]:
+      - button "Schematic" [ref=e10] [cursor=pointer]
+      - button "Breadboard" [active] [ref=e11] [cursor=pointer]
+    - generic [ref=e12]:
+      - button "Run" [ref=e13] [cursor=pointer]
+      - button "Step" [ref=e14] [cursor=pointer]
+      - button "Stop" [disabled] [ref=e15]
+    - button "?" [ref=e16] [cursor=pointer]
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]: "1"
+            - generic [ref=e25]: "2"
+            - generic [ref=e26]: "3"
+            - generic [ref=e27]: "4"
+            - generic [ref=e28]: "5"
+            - generic [ref=e29]: "6"
+            - generic [ref=e30]: "7"
+            - generic [ref=e31]: "8"
+            - generic [ref=e32]: "9"
+            - generic [ref=e33]: "10"
+            - generic [ref=e34]: "11"
+            - generic [ref=e35]: "12"
+          - generic [ref=e40]:
+            - generic [ref=e42]: ⌄
+            - generic [ref=e43]: ⌄
+        - textbox [ref=e44]:
+          - generic [ref=e577]: // This project uses the Arduino as power supply only.
+          - generic [ref=e159]: // The LED is controlled directly by the push button circuit.
+          - generic [ref=e618]: // No code is needed - just connect 5V through the button,
+          - generic [ref=e619]: // resistor, and LED to GND.
+          - generic [ref=e621]: "void setup() {"
+          - generic [ref=e622]: // Nothing to configure - Arduino is just providing power
+          - generic [ref=e623]: "}"
+          - generic [ref=e625]: "void loop() {"
+          - generic [ref=e626]: // Nothing to do - the circuit handles everything
+          - generic [ref=e627]: "}"
+      - generic [ref=e62]: Serial Monitor
+    - generic [ref=e64]:
+      - generic [ref=e65]:
+        - button "LED"
+        - button "RGB LED"
+        - button "220Ω"
+        - button "Button"
+        - button "HC-SR04"
+      - img [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - generic [ref=e75]: Arduino Uno
+            - generic [ref=e76]:
+              - generic "Digital Pin 0" [ref=e77]
+              - generic "Digital Pin 0" [ref=e78]
+              - generic [ref=e79]: "0"
+            - generic [ref=e80]:
+              - generic "Digital Pin 1" [ref=e81]
+              - generic "Digital Pin 1" [ref=e82]
+              - generic [ref=e83]: "1"
+            - generic [ref=e84]:
+              - generic "Digital Pin 2" [ref=e85]
+              - generic "Digital Pin 2" [ref=e86]
+              - generic [ref=e87]: "2"
+            - generic [ref=e88]:
+              - generic "Digital Pin 3" [ref=e89]
+              - generic "Digital Pin 3" [ref=e90]
+              - generic [ref=e91]: "3"
+            - generic [ref=e92]:
+              - generic "Digital Pin 4" [ref=e93]
+              - generic "Digital Pin 4" [ref=e94]
+              - generic [ref=e95]: "4"
+            - generic [ref=e96]:
+              - generic "Digital Pin 5" [ref=e97]
+              - generic "Digital Pin 5" [ref=e98]
+              - generic [ref=e99]: "5"
+            - generic [ref=e100]:
+              - generic "Digital Pin 6" [ref=e101]
+              - generic "Digital Pin 6" [ref=e102]
+              - generic [ref=e103]: "6"
+            - generic [ref=e104]:
+              - generic "Digital Pin 7" [ref=e105]
+              - generic "Digital Pin 7" [ref=e106]
+              - generic [ref=e107]: "7"
+            - generic [ref=e108]:
+              - generic "Digital Pin 8" [ref=e109]
+              - generic "Digital Pin 8" [ref=e110]
+              - generic [ref=e111]: "8"
+            - generic [ref=e112]:
+              - generic "Digital Pin 9" [ref=e113]
+              - generic "Digital Pin 9" [ref=e114]
+              - generic [ref=e115]: "9"
+            - generic [ref=e116]:
+              - generic "Digital Pin 10" [ref=e117]
+              - generic "Digital Pin 10" [ref=e118]
+              - generic [ref=e119]: "10"
+            - generic [ref=e120]:
+              - generic "Digital Pin 11" [ref=e121]
+              - generic "Digital Pin 11" [ref=e122]
+              - generic [ref=e123]: "11"
+            - generic [ref=e124]:
+              - generic "Digital Pin 12" [ref=e125]
+              - generic "Digital Pin 12" [ref=e126]
+              - generic [ref=e127]: "12"
+            - generic [ref=e128]:
+              - generic "Digital Pin 13" [ref=e129]
+              - generic "Digital Pin 13" [ref=e130]
+              - generic [ref=e131]: "13"
+            - generic [ref=e132]:
+              - generic "GND" [ref=e133]
+              - generic "GND" [ref=e134]
+              - generic [ref=e135]: GND
+            - generic [ref=e136]:
+              - generic "GND2" [ref=e137]
+              - generic "GND2" [ref=e138]
+              - generic [ref=e139]: GND2
+            - generic [ref=e140]:
+              - generic "5V" [ref=e141]
+              - generic "5V" [ref=e142]
+              - generic [ref=e143]: 5V
+            - generic [ref=e144]:
+              - generic "3.3V" [ref=e145]
+              - generic "3.3V" [ref=e146]
+              - generic [ref=e147]: 3.3V
+          - generic [ref=e182]:
+            - generic [ref=e275]: a
+            - generic [ref=e426]: f
+        - generic [ref=e682]:
+          - generic [ref=e684]: +
+          - generic [ref=e685]: "-"
+      - generic [ref=e148]:
+        - generic [ref=e149]: "Object Distance: 100cm"
+        - slider [ref=e150]: "100"

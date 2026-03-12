@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arduino Simulator</title>
+  <script type="module" crossorigin src="/assets/index-BysuTuce.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Dg2sy5h8.css">
+</head>
+<body>
+  <div id="app">
+    <header id="toolbar">
+      <span class="logo">Arduino Simulator</span>
+      <div class="file-controls">
+        <button id="btn-save">Save</button>
+        <button id="btn-load">Load</button>
+      </div>
+      <select id="example-select">
+        <option value="">Load Example...</option>
+      </select>
+      <div class="mode-toggle">
+        <button id="mode-schematic" class="active">Schematic</button>
+        <button id="mode-breadboard">Breadboard</button>
+      </div>
+      <div class="run-controls">
+        <button id="btn-run">Run</button>
+        <button id="btn-step">Step</button>
+        <button id="btn-stop" disabled>Stop</button>
+      </div>
+      <button id="btn-help" title="Help">?</button>
+    </header>
+    <main id="workspace">
+      <div id="editor-panel">
+        <div id="code-editor"></div>
+        <div id="serial-monitor">
+          <div class="serial-header">Serial Monitor</div>
+          <div id="serial-output"></div>
+        </div>
+      </div>
+      <div id="circuit-panel">
+        <div id="component-palette"></div>
+        <svg id="circuit-canvas" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+        </svg>
+        <div id="sensor-controls">
+          <label>Object Distance: <span id="distance-value">100</span>cm</label>
+          <input type="range" id="distance-slider" min="0" max="200" value="100" />
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="context-menu" style="display:none; position:fixed; z-index:1000;">
+    <button id="ctx-delete">Delete</button>
+  </div>
+  <div id="help-overlay" style="display:none;">
+    <div class="help-content">
+      <button id="help-close">&times;</button>
+      <h2>Arduino Simulator Help</h2>
+      <h3>Building Circuits</h3>
+      <ul>
+        <li><b>Add components:</b> Click buttons in the palette (LED, RGB LED, etc.)</li>
+        <li><b>Connect wires:</b> Click a pin, then click another pin to connect them</li>
+        <li><b>Cancel wire:</b> Press <kbd>Esc</kbd> or click empty space</li>
+        <li><b>Move components:</b> Drag them — wires follow automatically</li>
+        <li><b>Delete:</b> Click to select, then press <kbd>Delete</kbd> or right-click → Delete</li>
+        <li><b>Push button:</b> Click the round cap to press/release</li>
+      </ul>
+      <h3>Running Code</h3>
+      <ul>
+        <li><b>Run:</b> Executes your code continuously</li>
+        <li><b>Step:</b> Execute one line at a time (click Next to advance)</li>
+        <li><b>Stop:</b> Halt execution</li>
+        <li><b>Distance slider:</b> Controls the virtual ultrasonic sensor</li>
+      </ul>
+      <h3>Keyboard Shortcuts</h3>
+      <ul>
+        <li><kbd>Ctrl+Z</kbd> — Undo</li>
+        <li><kbd>Ctrl+Y</kbd> / <kbd>Ctrl+Shift+Z</kbd> — Redo</li>
+        <li><kbd>Delete</kbd> / <kbd>Backspace</kbd> — Delete selected component or wire</li>
+        <li><kbd>Esc</kbd> — Cancel wire in progress</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
