@@ -50,6 +50,39 @@ export class ConnectionGraph {
     return this.getConnectedNodes(nodeA).includes(nodeB);
   }
 
+  findPath(startNode, endNodes) {
+    const endSet = new Set(Array.isArray(endNodes) ? endNodes : [endNodes]);
+    const visited = new Set();
+    const parent = new Map();
+    const queue = [startNode];
+    visited.add(startNode);
+
+    while (queue.length > 0) {
+      const node = queue.shift();
+      if (endSet.has(node)) {
+        // Reconstruct path
+        const path = [];
+        let current = node;
+        while (current !== undefined) {
+          path.unshift(current);
+          current = parent.get(current);
+        }
+        return path;
+      }
+      const neighbors = this.edges.get(node);
+      if (neighbors) {
+        for (const neighbor of neighbors) {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            parent.set(neighbor, node);
+            queue.push(neighbor);
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   clear() {
     this.edges.clear();
   }

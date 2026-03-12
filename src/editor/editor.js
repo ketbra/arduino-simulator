@@ -37,7 +37,7 @@ const highlightField = StateField.define({
         ]);
       }
     }
-    return decorations;
+    return decorations.map(tr.changes);
   },
   provide: (f) => EditorView.decorations.from(f),
 });

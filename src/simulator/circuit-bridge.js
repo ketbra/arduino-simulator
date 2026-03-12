@@ -1,3 +1,7 @@
+import { solveCircuit } from '../circuit/circuit-solver.js';
+
+const GND_NODES = ['arduino:GND', 'arduino:GND2'];
+
 export class CircuitBridge {
   constructor(runtime, renderer, connectionGraph, componentModels, bbRenderer) {
     this.runtime = runtime;
@@ -21,96 +25,48 @@ export class CircuitBridge {
     if (this.bbRenderer) this.bbRenderer.updateRgbLed(id, color, burnedOut);
   }
 
-  // Check LEDs connected to static power rails (5V/3.3V + GND)
   evaluateStaticConnections() {
-    const POWER_NODES = ['arduino:5V', 'arduino:3V3'];
-    const GND_NODES = ['arduino:GND', 'arduino:GND2'];
-
-    for (const [id, model] of this.models) {
-      if (model.type === 'led') {
-        const anodeConnected = this.graph.getConnectedNodes(`component:${id}:anode`);
-        const cathodeConnected = this.graph.getConnectedNodes(`component:${id}:cathode`);
-
-        const anodeHasPower = anodeConnected.some((n) => POWER_NODES.includes(n));
-        const cathodeHasGnd = cathodeConnected.some((n) => GND_NODES.includes(n));
-        // Also handle reversed wiring
-        const anodeHasGnd = anodeConnected.some((n) => GND_NODES.includes(n));
-        const cathodeHasPower = cathodeConnected.some((n) => POWER_NODES.includes(n));
-
-        const hasCompletePowerCircuit = (anodeHasPower && cathodeHasGnd) || (anodeHasGnd && cathodeHasPower);
-        if (hasCompletePowerCircuit) {
-          const hasResistor = [...anodeConnected, ...cathodeConnected].some((n) => /^component:(r\d+|resistor-\d+):/.test(n));
-          const voltage = (anodeHasPower && cathodeHasGnd) ? 1 : -1;
-          model.update({ anode: voltage > 0 ? 1 : 0, cathode: voltage > 0 ? 0 : 1 }, { hasResistor });
-          this._updateLed(id, model.brightness, model.burnedOut);
-        }
-      }
-    }
+    const powerSources = [
+      { node: 'arduino:5V', voltage: 5.0 },
+      { node: 'arduino:3V3', voltage: 3.3 },
+    ];
+    this._solveAndApply(powerSources);
   }
 
   _onPinChange(pin, value) {
-    const pinNode = `arduino:pin${pin}`;
+    // Build power sources including GPIO pins
+    const powerSources = [
+      { node: 'arduino:5V', voltage: 5.0 },
+      { node: 'arduino:3V3', voltage: 3.3 },
+    ];
 
-    for (const [id, model] of this.models) {
-      if (model.type === 'led') {
-        const anodeConnected = this.graph.getConnectedNodes(`component:${id}:anode`);
-        const cathodeConnected = this.graph.getConnectedNodes(`component:${id}:cathode`);
-        const allConnected = [...anodeConnected, ...cathodeConnected];
-
-        // Check if the changed pin drives this LED
-        if (allConnected.includes(pinNode)) {
-          const hasResistor = allConnected.some((n) => /^component:(r\d+|resistor-\d+):/.test(n));
-          model.update({ anode: value, cathode: 0 }, { hasResistor });
-          this._updateLed(id, model.brightness, model.burnedOut);
-        } else if (!model.burnedOut && model.brightness > 0) {
-          // Pin changed but LED not connected to it — check if LED lost its driver
-          const hasAnyDriver = allConnected.some((n) => /^arduino:pin\d+$/.test(n));
-          if (!hasAnyDriver) {
-            model.brightness = 0;
-            this._updateLed(id, model.brightness, model.burnedOut);
-          }
-        }
+    // Add all active GPIO pins as power sources
+    for (let p = 0; p <= 13; p++) {
+      const state = this.runtime.getPinState(p);
+      if (state !== undefined && state !== null) {
+        // Digital: 0 or 1 → 0V or 5V. PWM: 0-255 → 0-5V
+        const voltage = state <= 1 ? state * 5.0 : (state / 255) * 5.0;
+        powerSources.push({ node: `arduino:pin${p}`, voltage });
       }
+    }
 
-      if (model.type === 'rgb-led') {
-        const pinMap = { red: null, green: null, blue: null };
-        let needsUpdate = false;
+    this._solveAndApply(powerSources);
+  }
 
-        for (const channel of ['red', 'green', 'blue']) {
-          const channelConnected = this.graph.getConnectedNodes(`component:${id}:${channel}`);
-          for (const node of channelConnected) {
-            const match = node.match(/arduino:pin(\d+)/);
-            if (match) {
-              const pinNum = parseInt(match[1], 10);
-              pinMap[channel] = this.runtime.getPinState(pinNum) || 0;
-              if (pinNum === pin) needsUpdate = true;
-            }
-          }
-        }
+  _solveAndApply(powerSources) {
+    const results = solveCircuit(this.graph, this.models, powerSources, GND_NODES);
 
-        if (needsUpdate) {
-          const commonConnected = this.graph.getConnectedNodes(`component:${id}:common`);
-          // Only check resistors on channels that are actually connected to a pin
-          const hasResistors = ['red', 'green', 'blue'].every((ch) => {
-            const connected = this.graph.getConnectedNodes(`component:${id}:${ch}`);
-            const isActive = connected.some((n) => /^arduino:pin\d+$/.test(n));
-            if (!isActive) return true; // unconnected channel is fine
-            return connected.some((n) => /^component:(r\d+|resistor-\d+):/.test(n));
-          });
-
-          // Scale pin values to 0-255 range for the RGB model (common-anode)
-          // null = unconnected channel → 255 (HIGH = OFF for common-anode)
-          // Digital 0/1 → 0/255, analogWrite 0-255 passed through
-          const scale = (v) => v == null ? 255 : (v <= 1 ? v * 255 : v);
-          model.update({
-            common: commonConnected.some((n) => n.includes('5V')) ? 1 : 0,
-            red: scale(pinMap.red),
-            green: scale(pinMap.green),
-            blue: scale(pinMap.blue),
-          }, { hasResistors });
-
-          this._updateRgbLed(id, model.color, model.burnedOut);
-        }
+    for (const [id, result] of results) {
+      const model = this.models.get(id);
+      if (!model) continue;
+      if (model.type === 'led') {
+        model.brightness = result.brightness;
+        model.burnedOut = result.burnedOut;
+        this._updateLed(id, model.brightness, model.burnedOut);
+      } else if (model.type === 'rgb-led') {
+        model.color = result.color;
+        model.burnedOut = result.burnedOut;
+        this._updateRgbLed(id, model.color, model.burnedOut);
       }
     }
   }

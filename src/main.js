@@ -12,8 +12,9 @@ import { compute as computeBreadboardLayout, COMPONENT_SPECS } from './circuit/b
 import { BreadboardRenderer } from './circuit/breadboard-renderer.js';
 import { projects } from './projects/index.js';
 import { CircuitBridge } from './simulator/circuit-bridge.js';
-import { LED, RgbLed } from './circuit/components/index.js';
+import { LED, RgbLed, Resistor } from './circuit/components/index.js';
 import { createUndoManager } from './ui/undo-manager.js';
+import { solveCircuit } from './circuit/circuit-solver.js';
 
 // --- Dirty State (Feature 4) ---
 let dirty = false;
@@ -37,10 +38,15 @@ createComponentPalette(document.getElementById('component-palette'), (type, id, 
   if (!wiring.enabled) return;
   renderer.addComponent(type, id, x, y);
   // Register component models so CircuitBridge can update visuals
-  if (type === 'led') componentModels.set(id, new LED(id));
+  if (type === 'led') {
+    componentModels.set(id, new LED(id));
+    connectionGraph.addWire(`component:${id}:anode`, `component:${id}:cathode`);
+  }
   if (type === 'rgb-led') componentModels.set(id, new RgbLed(id));
-  // Connect resistor pins internally so BFS can traverse through them
-  if (type === 'resistor') connectionGraph.addWire(`component:${id}:pin1`, `component:${id}:pin2`);
+  if (type === 'resistor') {
+    componentModels.set(id, new Resistor(id));
+    connectionGraph.addWire(`component:${id}:pin1`, `component:${id}:pin2`);
+  }
   undoManager.push({ type: 'add-component', data: { type, id, x, y } });
   markDirty();
 });
@@ -54,30 +60,30 @@ const wiring = new WiringSystem(
 
 const componentModels = new Map();
 
-// Evaluate static power rail connections (5V/GND directly to LEDs)
-const POWER_NODES = ['arduino:5V', 'arduino:3V3'];
 const GND_NODES = ['arduino:GND', 'arduino:GND2'];
 
-function evaluateStaticConnections() {
-  for (const [id, model] of componentModels) {
+function evaluateStaticConnections(extraPowerSources) {
+  const powerSources = [
+    { node: 'arduino:5V', voltage: 5.0 },
+    { node: 'arduino:3V3', voltage: 3.3 },
+    ...(extraPowerSources || []),
+  ];
+
+  const results = solveCircuit(connectionGraph, componentModels, powerSources, GND_NODES);
+
+  for (const [id, result] of results) {
+    const model = componentModels.get(id);
+    if (!model) continue;
     if (model.type === 'led') {
-      const anodeConnected = connectionGraph.getConnectedNodes(`component:${id}:anode`);
-      const cathodeConnected = connectionGraph.getConnectedNodes(`component:${id}:cathode`);
-      const allConnected = [...anodeConnected, ...cathodeConnected];
-
-      const hasPower = allConnected.some((n) => POWER_NODES.includes(n));
-      const hasGnd = allConnected.some((n) => GND_NODES.includes(n));
-
-      if (hasPower && hasGnd) {
-        const hasResistor = allConnected.some((n) => /^component:(r\d+|resistor-\d+):/.test(n));
-        const anodeHasPower = anodeConnected.some((n) => POWER_NODES.includes(n));
-        model.update({ anode: anodeHasPower ? 1 : 0, cathode: anodeHasPower ? 0 : 1 }, { hasResistor });
-        renderer.updateLed(id, model.brightness, model.burnedOut);
-      } else if (!model.burnedOut && model.brightness > 0) {
-        // Circuit broken — turn off
-        model.brightness = 0;
-        renderer.updateLed(id, model.brightness, model.burnedOut);
-      }
+      model.brightness = result.brightness;
+      model.burnedOut = result.burnedOut;
+      renderer.updateLed(id, model.brightness, model.burnedOut);
+      bbRenderer.updateLed(id, model.brightness, model.burnedOut);
+    } else if (model.type === 'rgb-led') {
+      model.color = result.color;
+      model.burnedOut = result.burnedOut;
+      renderer.updateRgbLed(id, model.color, model.burnedOut);
+      bbRenderer.updateRgbLed(id, model.color, model.burnedOut);
     }
   }
 }
@@ -106,7 +112,7 @@ btnSchematic.addEventListener('click', () => {
   document.body.classList.remove('breadboard-mode');
 });
 
-btnBreadboard.addEventListener('click', () => {
+function renderBreadboardView() {
   // Gather current components and wires
   const components = [];
   for (const [id, comp] of renderer.components) {
@@ -143,6 +149,10 @@ btnBreadboard.addEventListener('click', () => {
   }
 
   bbRenderer.render(result, pinPositions);
+}
+
+btnBreadboard.addEventListener('click', () => {
+  renderBreadboardView();
 
   renderer.setMode('breadboard');
   btnBreadboard.classList.add('active');
@@ -308,10 +318,13 @@ function loadProject(project) {
   // 4. Place components and add internal connections
   for (const comp of project.components) {
     renderer.addComponent(comp.type, comp.id, comp.x, comp.y);
-    if (comp.type === 'led') componentModels.set(comp.id, new LED(comp.id));
+    if (comp.type === 'led') {
+      componentModels.set(comp.id, new LED(comp.id));
+      connectionGraph.addWire(`component:${comp.id}:anode`, `component:${comp.id}:cathode`);
+    }
     if (comp.type === 'rgb-led') componentModels.set(comp.id, new RgbLed(comp.id));
-    // Resistors are pass-through: pin1 and pin2 are internally connected
     if (comp.type === 'resistor') {
+      componentModels.set(comp.id, new Resistor(comp.id, comp.ohms));
       connectionGraph.addWire(`component:${comp.id}:pin1`, `component:${comp.id}:pin2`);
     }
   }
@@ -327,6 +340,11 @@ function loadProject(project) {
   }
 
   clearDirty();
+
+  // If currently in breadboard mode, re-render the breadboard view
+  if (renderer.mode === 'breadboard') {
+    renderBreadboardView();
+  }
 }
 
 // --- Undo/Redo wiring ---

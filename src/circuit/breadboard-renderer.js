@@ -151,11 +151,24 @@ function renderBBPushButton(g, placement) {
     rx: 3, fill: '#555', stroke: '#333', 'stroke-width': 1,
   }));
 
-  // Button cap circle
-  compG.appendChild(svgEl('circle', {
+  // Button cap circle (clickable)
+  const cap = svgEl('circle', {
     cx: midX, cy: GAP_CENTER_Y, r: 6,
     fill: '#999', stroke: '#777', 'stroke-width': 0.5,
-  }));
+    style: 'cursor: pointer',
+  });
+  compG.appendChild(cap);
+
+  // Toggle on click — dispatch the same buttonToggle event as the schematic button
+  let pressed = false;
+  cap.addEventListener('click', () => {
+    pressed = !pressed;
+    cap.setAttribute('fill', pressed ? '#ccc' : '#999');
+    compG.dispatchEvent(new CustomEvent('buttonToggle', {
+      detail: { id: placement.compId, pressed },
+      bubbles: true,
+    }));
+  });
 
   // Pin dots at 4 corners
   compG.appendChild(svgEl('circle', { cx: x1, cy: ROW_E_Y, r: 2.5, fill: '#555' }));

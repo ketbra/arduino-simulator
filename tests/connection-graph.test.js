@@ -32,4 +32,55 @@ describe('ConnectionGraph', () => {
     expect(connected).toContain('breadboard:power+');
     expect(connected).toContain('component:led1:anode');
   });
+
+  describe('findPath', () => {
+    it('finds a direct path between two nodes', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      graph.addWire('B', 'C');
+      const path = graph.findPath('A', ['C']);
+      expect(path).toEqual(['A', 'B', 'C']);
+    });
+
+    it('returns null when no path exists', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      graph.addWire('C', 'D');
+      expect(graph.findPath('A', ['D'])).toBeNull();
+    });
+
+    it('finds path to any of multiple end nodes', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      graph.addWire('B', 'GND1');
+      const path = graph.findPath('A', ['GND1', 'GND2']);
+      expect(path).toEqual(['A', 'B', 'GND1']);
+    });
+
+    it('returns single-node path when start is an end node', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      const path = graph.findPath('A', ['A']);
+      expect(path).toEqual(['A']);
+    });
+
+    it('finds path through a longer chain', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('5V', 'r1:pin1');
+      graph.addWire('r1:pin1', 'r1:pin2');
+      graph.addWire('r1:pin2', 'led:anode');
+      graph.addWire('led:cathode', 'GND');
+      // Need to connect anode to cathode through the graph for BFS
+      // In real usage, internal LED pins aren't connected in the graph
+      const path = graph.findPath('5V', ['r1:pin2']);
+      expect(path).toEqual(['5V', 'r1:pin1', 'r1:pin2']);
+    });
+
+    it('accepts a single end node (not array)', () => {
+      const graph = new ConnectionGraph();
+      graph.addWire('A', 'B');
+      const path = graph.findPath('A', 'B');
+      expect(path).toEqual(['A', 'B']);
+    });
+  });
 });
