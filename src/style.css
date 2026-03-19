@@ -52,7 +52,7 @@ html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; backg
 }
 #circuit-canvas { flex: 1; }
 #sensor-controls {
-  padding: 8px 16px; background: #e8e8e4; border-top: 1px solid #ccc;
+  padding: 8px 16px; background: #e8e8e4; border-bottom: 1px solid #ccc;
   display: flex; align-items: center; gap: 12px; color: #333;
 }
 #distance-slider { flex: 1; max-width: 300px; }

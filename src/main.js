@@ -49,6 +49,7 @@ createComponentPalette(document.getElementById('component-palette'), (type, id, 
   }
   undoManager.push({ type: 'add-component', data: { type, id, x, y } });
   markDirty();
+  updateSensorControlsVisibility();
 });
 
 const connectionGraph = new ConnectionGraph();
@@ -110,6 +111,12 @@ const btnSchematic = document.getElementById('mode-schematic');
 const btnBreadboard = document.getElementById('mode-breadboard');
 const distanceSlider = document.getElementById('distance-slider');
 const distanceValue = document.getElementById('distance-value');
+const sensorControls = document.getElementById('sensor-controls');
+
+function updateSensorControlsVisibility() {
+  const hasUltrasonic = [...renderer.components.values()].some(c => c.type === 'ultrasonic-sensor');
+  sensorControls.style.display = hasUltrasonic ? '' : 'none';
+}
 
 btnSchematic.addEventListener('click', () => {
   bbRenderer.clear();
@@ -338,6 +345,7 @@ function loadProject(project) {
       connectionGraph.addInternalWire(`component:${comp.id}:pin1`, `component:${comp.id}:pin2`);
     }
   }
+  updateSensorControlsVisibility();
 
   // 5. Add wires (store pin IDs so wires follow components when dragged)
   for (const wire of project.wires) {
@@ -458,6 +466,7 @@ function handleUndo(result) {
     default:
       break;
   }
+  updateSensorControlsVisibility();
   markDirty();
 }
 
@@ -525,6 +534,7 @@ function deleteSelectedComponent(id) {
     componentModels.delete(id);
     undoManager.push({ type: 'remove-component', data: result });
     markDirty();
+    updateSensorControlsVisibility();
     evaluateStaticConnections();
   }
 }

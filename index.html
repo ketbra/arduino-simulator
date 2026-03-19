@@ -37,6 +37,10 @@
       </div>
       <div id="circuit-panel">
         <div id="component-palette"></div>
+        <div id="sensor-controls" style="display:none;">
+          <label>Object Distance: <span id="distance-value">100</span>cm</label>
+          <input type="range" id="distance-slider" min="0" max="200" value="100" />
+        </div>
         <svg id="circuit-canvas" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <filter id="glow">
@@ -48,10 +52,6 @@
             </filter>
           </defs>
         </svg>
-        <div id="sensor-controls">
-          <label>Object Distance: <span id="distance-value">100</span>cm</label>
-          <input type="range" id="distance-slider" min="0" max="200" value="100" />
-        </div>
       </div>
     </main>
   </div>
